@@ -305,41 +305,41 @@ void TintDistort::Write(BinWritterRef rd) const {
 REFLECT(CLASS(Material), MEMBER(unk), MEMBER(meshName), MEMBER(materialName),
         MEMBER(shaderType), MEMBER(shaderName), MEMBER(unk0))
 
-REFLECT(CLASS(BumpAnisotropic), MEMBER(alebedoTexture), MEMBER(normalTexture),
+REFLECT(BASEDCLASS(Material, BumpAnisotropic), MEMBER(alebedoTexture), MEMBER(normalTexture),
         MEMBER(anisotropyTexture), MEMBER(ambient), MEMBER(diffuse),
         MEMBER(specular), MEMBER(unk1), MEMBER(albedoUVScale),
         MEMBER(normalUVScale), MEMBER(masked), MEMBER(blended))
 
-REFLECT(CLASS(Glow), MEMBER(glowTexture), MEMBER(glowUVScale),
+REFLECT(BASEDCLASS(Material, Glow), MEMBER(glowTexture), MEMBER(glowUVScale),
         MEMBER(glowUVOffset), MEMBER(velocity), MEMBER(glowLevel),
         MEMBER(glowFactor), MEMBER(blended), MEMBER(fogFactor))
 
-REFLECT(CLASS(Unlit), MEMBER(ambient), MEMBER(diffuse), MEMBER(unk1),
+REFLECT(BASEDCLASS(Material, Unlit), MEMBER(ambient), MEMBER(diffuse), MEMBER(unk1),
         MEMBER(generatedShadows), MEMBER(translucent), MEMBER(null0),
         MEMBER(unk2), MEMBER(albedoTexture), MEMBER(pulseFrequency),
         MEMBER(unk3), MEMBER(velocity), MEMBER(unk4), MEMBER(fogFactor),
         MEMBER(blended), MEMBER(fogOutFactor), MEMBER(vertexAlpha))
 
-REFLECT(CLASS(BumpSpecular), MEMBER(ambient), MEMBER(diffuse), MEMBER(specular),
+REFLECT(BASEDCLASS(Material, BumpSpecular), MEMBER(ambient), MEMBER(diffuse), MEMBER(specular),
         MEMBER(unk1), MEMBER(generatedShadows), MEMBER(translucent),
         MEMBER(masked), MEMBER(unk2), MEMBER(alebedoTexture),
         MEMBER(normalTexture), MEMBER(albedoUVScale), MEMBER(normalUVScale),
         MEMBER(albedoUVOffset), MEMBER(normalUVOffset), MEMBER(blended))
 
-REFLECT(CLASS(TexBlend), MEMBER(alebedo0Texture), MEMBER(alebedo1Texture),
+REFLECT(BASEDCLASS(Material, TexBlend), MEMBER(alebedo0Texture), MEMBER(alebedo1Texture),
         MEMBER(normalTexture), MEMBER(ambient), MEMBER(diffuse),
         MEMBER(specular), MEMBER(unk1), MEMBER(texture1Scale),
         MEMBER(texture2Scale), MEMBER(texture3Scale), MEMBER(unk2),
         MEMBER(applyNormalTo1stTextureOnly), MEMBER(unk3))
 
-REFLECT(CLASS(Overlay), MEMBER(ambient), MEMBER(diffuse), MEMBER(specular),
+REFLECT(BASEDCLASS(Material, Overlay), MEMBER(ambient), MEMBER(diffuse), MEMBER(specular),
         MEMBER(unk1), MEMBER(vertexAlpha), MEMBER(unk2), MEMBER(unk3),
         MEMBER(alebedoTexture), MEMBER(normalTexture), MEMBER(albedoUVScale),
         MEMBER(normalUVScale), MEMBER(albedoUVOffset), MEMBER(normalUVOffset),
         MEMBER(textureVelocity), MEMBER(depthBias), MEMBER(isBlended),
         MEMBER(data2))
 
-REFLECT(CLASS(TintDistort), MEMBER(alebedoTexture), MEMBER(normalTexture),
+REFLECT(BASEDCLASS(Material, TintDistort), MEMBER(alebedoTexture), MEMBER(normalTexture),
         MEMBER(albedoUVScale), MEMBER(normalUVScale), MEMBER(albedoUVOffset),
         MEMBER(normalUVOffset), MEMBER(textureVelocity), MEMBER(isBlended))
 

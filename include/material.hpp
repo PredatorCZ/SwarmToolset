@@ -31,6 +31,7 @@ struct Material {
   std::string shaderName;
   uint32 unk0;
 
+  void ReflectorTag();
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
 };
