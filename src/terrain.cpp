@@ -34,6 +34,7 @@ void SBT::Header::Read(BinReaderRef rd) {
 
   rd.ReadContainerLambda(materials, ReadMaterialVariant);
   rd.ReadContainer(groups);
+  rd.ReadContainer(zones);
 }
 
 void SBT::Header::Write(BinWritterRef rd) const {
@@ -60,4 +61,66 @@ void SBT::Group::Write(BinWritterRef wr) const {
   wr.WriteT(unkName);
   wr.WriteContainerLambda(usedMaterials,
                           [](BinWritterRef wr, auto &str) { wr.WriteT(str); });
+}
+
+void SBT::ShadowShader::Read(BinReaderRef rd) {
+  rd.ReadString(shaderType);
+  rd.ReadString(shaderName);
+  rd.Read(unk0);
+  rd.ReadString(shadowTexture);
+  rd.Read(unk1);
+}
+
+void SBT::Zone::Read(BinReaderRef rd) {
+  rd.ReadString(name);
+  rd.Read(bbox);
+  rd.Read(unk0);
+  rd.Read(shadowVolumeExtrusionDepth);
+  rd.Read(model);
+  rd.Read(collision);
+}
+
+void SBT::DepthField::Read(BinReaderRef rd) {
+  rd.ReadString(depthMap);
+  rd.Read(tm0);
+  rd.Read(tm1);
+  rd.Read(bbox);
+}
+
+constexpr uint32 BYOH = CompileFourCC("BYHO");
+
+void SBT::CollisionObject::Read(BinReaderRef rd) {
+  uint32 id;
+  rd.Read(id);
+
+  if (id != BYOH) {
+    throw es::InvalidHeaderError(id);
+  }
+
+  rd.ReadContainer(ids0);
+  uint32 numIds1;
+  rd.Read(numIds1);
+
+  if (numIds1 > 1) {
+    rd.ReadContainer(ids1, numIds1);
+  }
+
+  rd.Read(unk3);
+  if ((unk3 & 4) == 0) {
+    rd.ReadContainer(bboxGroups);
+  }
+  uint32 numPositions;
+  uint32 numTris;
+  rd.Read(numPositions);
+  rd.Read(numTris);
+  rd.ReadContainer(positions, numPositions);
+  rd.ReadContainer(tris, numTris);
+  rd.ReadContainer(trisTypes, numTris);
+  rd.Read(unk6);
+  bool useDepthField;
+  rd.Read(useDepthField);
+
+  if (useDepthField) {
+    rd.Read(depthField);
+  }
 }

@@ -16,9 +16,7 @@
 */
 
 #pragma once
-#include "material.hpp"
-#include "spike/io/bincore_fwd.hpp"
-#include <vector>
+#include "model.hpp"
 
 namespace SBT {
 struct Group {
@@ -30,7 +28,61 @@ struct Group {
   void Write(BinWritterRef wr) const;
 };
 
-struct Zone {};
+struct ShadowShader {
+  std::string shaderType;
+  std::string shaderName;
+  uint32 unk0;
+  std::string shadowTexture;
+  float unk1[4];
+
+  void Read(BinReaderRef rd);
+  void Write(BinWritterRef wr) const;
+};
+
+struct DepthField {
+  std::string depthMap;
+  es::Matrix44 tm0;
+  es::Matrix44 tm1;
+  SBM::BBOX bbox;
+
+  void Read(BinReaderRef rd);
+  void Write(BinWritterRef wr) const;
+};
+
+struct CollisionBBoxGroup {
+  SBM::BBOX bbox;
+  uint32 unk4[2];
+};
+
+struct CollisionObject {
+  std::vector<uint32> ids0;
+  std::vector<uint32> ids1;
+  uint32 unk3;
+
+  std::vector<CollisionBBoxGroup> bboxGroups;
+  std::vector<Vector> positions;
+  std::vector<IVector> tris;
+  std::vector<uint32> trisTypes;
+
+  float unk6[10];
+
+  DepthField depthField;
+
+  void Read(BinReaderRef rd);
+  void Write(BinWritterRef wr) const;
+};
+
+struct Zone {
+  std::string name;
+  SBM::BBOX bbox;
+  bool unk0[2];
+  float shadowVolumeExtrusionDepth;
+  SBM::RenderModel model;
+  CollisionObject collision;
+
+  void Read(BinReaderRef rd);
+  void Write(BinWritterRef wr) const;
+};
 
 struct Header {
   uint32 id;

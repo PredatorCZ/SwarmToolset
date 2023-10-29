@@ -20,3 +20,26 @@ build_target(
   START_YEAR
   2017)
 
+project(SBT2GLTF)
+
+build_target(
+  NAME
+  sbt_to_gltf
+  TYPE
+  ESMODULE
+  VERSION
+  1
+  SOURCES
+  sbt_to_gltf.cpp
+  LINKS
+  spike-interface
+  gltf-interface
+  libswarm
+  zstd-objects
+  AUTHOR
+  "Lukas Cone"
+  DESCR
+  "Convert Swarm Binary Terrain to GLTF"
+  START_YEAR
+  2017)
+
