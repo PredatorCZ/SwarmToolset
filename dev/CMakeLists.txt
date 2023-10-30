@@ -59,3 +59,43 @@ build_target(
   "Dump patched mod cache"
   START_YEAR
   2023)
+
+project(ScanScripts)
+
+build_target(
+  NAME
+  scan_scripts
+  TYPE
+  ESMODULE
+  VERSION
+  1
+  SOURCES
+  scan_scripts.cpp
+  LINKS
+  libswarm
+  AUTHOR
+  "Lukas Cone"
+  DESCR
+  "Scan scripts and fixup reflections"
+  START_YEAR
+  2023)
+
+project(ValidateScripts)
+
+build_target(
+  NAME
+  validate_scripts
+  TYPE
+  ESMODULE
+  VERSION
+  1
+  SOURCES
+  validate_scripts.cpp
+  LINKS
+  libswarm
+  AUTHOR
+  "Lukas Cone"
+  DESCR
+  "Scan scripts and fixup reflections"
+  START_YEAR
+  2023)
