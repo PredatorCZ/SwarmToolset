@@ -12,9 +12,7 @@ build_target(
   VERSION
   1
   LINKS
-  spike-interface
-  zstd-objects
-  libswarm
+  stcache
   AUTHOR
   "Lukas Cone"
   DESCR

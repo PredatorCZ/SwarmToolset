@@ -12,8 +12,7 @@ build_target(
   LINKS
   spike-objects
   pugixml-objects
-  libswarm
-  zstd-objects
+  stcache
   AUTHOR
   "Lukas Cone"
   DESCR
@@ -33,9 +32,7 @@ build_target(
   VERSION
   1
   LINKS
-  spike-interface
-  zstd-objects
-  libswarm
+  stcache
   AUTHOR
   "Lukas Cone"
   DESCR
@@ -55,8 +52,7 @@ build_target(
   LINKS
   spike-objects
   pugixml-objects
-  zstd-objects
-  libswarm
+  stcache
   AUTHOR
   "Lukas Cone"
   DESCR

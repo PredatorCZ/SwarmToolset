@@ -10,10 +10,8 @@ build_target(
   SOURCES
   sbm_to_gltf.cpp
   LINKS
-  spike-interface
   gltf-interface
   libswarm
-  zstd-objects
   AUTHOR
   "Lukas Cone"
   DESCR

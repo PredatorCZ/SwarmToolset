@@ -10,7 +10,6 @@ build_target(
   SOURCES
   extract_slak.cpp
   LINKS
-  spike-interface
   zlib-objects
   libswarm
   INCLUDES
@@ -34,7 +33,6 @@ build_target(
   SOURCES
   create_slak.cpp
   LINKS
-  spike-interface
   zlib-objects
   libswarm
   INCLUDES

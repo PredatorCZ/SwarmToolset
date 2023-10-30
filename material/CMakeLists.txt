@@ -10,7 +10,6 @@ build_target(
   SOURCES
   fixup_materials.cpp
   LINKS
-  spike-interface
   libswarm
   AUTHOR
   "Lukas Cone"
@@ -31,7 +30,6 @@ build_target(
   SOURCES
   dump_materials.cpp
   LINKS
-  spike-interface
   pugixml-interface
   libswarm
   AUTHOR

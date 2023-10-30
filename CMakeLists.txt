@@ -18,7 +18,7 @@ include(version)
 
 set_target_properties(spike_cli PROPERTIES OUTPUT_NAME swarm_toolset)
 
-add_library(libswarm OBJECT src/terrain.cpp src/material.cpp src/stcache.cpp src/script_reflect0.cpp src/script_reflect1.cpp src/script_reflect2.cpp src/script.cpp src/model.cpp)
+add_library(libswarm OBJECT src/terrain.cpp src/material.cpp src/script_reflect0.cpp src/script_reflect1.cpp src/script_reflect2.cpp src/script.cpp src/model.cpp)
 target_link_libraries(libswarm spike-interface)
 target_include_directories(libswarm PUBLIC include)
 set_target_properties(libswarm PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
@@ -29,9 +29,11 @@ set_target_properties(zlib-objects PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 enable_language(ASM)
 file(GLOB_RECURSE ZSTD_SOURCE_FILES "${TPD_PATH}/zstd/lib/*.c")
-add_library(zstd-objects OBJECT ${ZSTD_SOURCE_FILES} ${TPD_PATH}/zstd/lib/decompress/huf_decompress_amd64.S)
-set_target_properties(zstd-objects PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
-target_include_directories(zstd-objects PUBLIC ${TPD_PATH}/zstd/lib/common ${TPD_PATH}/zstd/lib)
+
+add_library(stcache OBJECT src/stcache.cpp ${ZSTD_SOURCE_FILES} ${TPD_PATH}/zstd/lib/decompress/huf_decompress_amd64.S)
+target_link_libraries(stcache spike-interface)
+target_include_directories(stcache PUBLIC include PRIVATE ${TPD_PATH}/zstd/lib/common ${TPD_PATH}/zstd/lib)
+set_target_properties(stcache PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 add_spike_subdir(slack)
 add_spike_subdir(material)
