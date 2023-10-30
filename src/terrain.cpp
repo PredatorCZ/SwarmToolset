@@ -77,6 +77,11 @@ void SBT::Zone::Read(BinReaderRef rd) {
   rd.Read(unk0);
   rd.Read(shadowVolumeExtrusionDepth);
   rd.Read(model);
+  uint32 numLods;
+  rd.Read(numLods);
+  if (numLods > 0) {
+    throw std::runtime_error("Terrain shouldn't have lods");
+  }
   rd.Read(collision);
 }
 

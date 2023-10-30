@@ -96,7 +96,6 @@ struct RenderModel {
   std::vector<BBOX> nodeBounds;
   std::vector<SkinBone> joints;
   std::vector<Bone> bones;
-  std::vector<RenderModel> lods;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
@@ -108,7 +107,7 @@ struct Header {
   uint8 versionMinor;
 
   std::vector<MaterialVariant> materials;
-  RenderModel model;
+  std::vector<RenderModel> lods;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;

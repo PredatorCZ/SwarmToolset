@@ -34,7 +34,13 @@ void SBM::Header::Read(BinReaderRef rd) {
   rd.Read(versionMinor);
 
   rd.ReadContainerLambda(materials, ReadMaterialVariant);
-  rd.Read(model);
+  rd.Read(lods.emplace_back());
+  uint32 numLods;
+  rd.Read(numLods);
+
+  for (uint32 i = 0; i < numLods; i++) {
+    rd.Read(lods.emplace_back());
+  }
 }
 
 void SBM::Header::Write(BinWritterRef rd) const {
@@ -119,8 +125,6 @@ void SBM::RenderModel::Read(BinReaderRef rd) {
   rd.Read(bones.emplace_back());
 
   ReadBones(rd, bones, thisIndex);
-
-  //rd.ReadContainer(lods);
 }
 
 void SBM::Primitive::Read(BinReaderRef rd) {

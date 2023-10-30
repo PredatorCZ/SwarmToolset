@@ -359,11 +359,7 @@ gltf::Attributes AddBuffer(SBM::Buffer &buffer, GLTFModel &main,
   return attributes;
 }
 
-void AppProcessFile(AppContext *ctx) {
-  BinReaderRef rd(ctx->GetStream());
-  SBM::Header hdr;
-  rd.Read(hdr);
-
+void SaveLod(AppContext *ctx, SBM::Header &hdr, size_t lodIndex) {
   GLTFModel main;
   size_t renderNode = main.nodes.size();
   main.nodes.emplace_back().name = "Render";
@@ -383,9 +379,10 @@ void AppProcessFile(AppContext *ctx) {
   std::map<std::string, size_t> bones;
   size_t nodesBegin = main.nodes.size();
   main.scenes.front().nodes.emplace_back(nodesBegin);
-  //main.transform = es::Matrix44{{-1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}};
+  // main.transform = es::Matrix44{{-1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}};
+  auto &model = hdr.lods.at(lodIndex);
 
-  for (auto &b : hdr.model.bones) {
+  for (auto &b : model.bones) {
     bones.emplace(b.name, main.nodes.size());
     auto &cNode = main.nodes.emplace_back();
     cNode.name = b.name;
@@ -396,12 +393,11 @@ void AppProcessFile(AppContext *ctx) {
     memcpy(cNode.matrix.data(), &b.tm, sizeof(b.tm));
   }
 
-  auto &mesh = hdr.model;
   std::map<uint32, gltf::Attributes> mainOffsets;
   std::map<uint32, gltf::Attributes> shadowCastOffsets;
   std::map<uint32, uint32> skinRanges;
 
-  for (auto &p : mesh.primitives) {
+  for (auto &p : model.primitives) {
     if (p.name.starts_with("RawGeometry")) {
       continue;
     } else if (p.name.ends_with("_CompiledShadowShader")) {
@@ -420,7 +416,7 @@ void AppProcessFile(AppContext *ctx) {
     auto &gSkin = main.skins.emplace_back();
 
     for (size_t i = 0; i < size; i++) {
-      auto &joint = hdr.model.joints.at(off - 1 + i);
+      auto &joint = model.joints.at(off - 1 + i);
       size_t boneIndex = bones.at(joint.name);
       gSkin.joints.emplace_back(boneIndex);
     }
@@ -438,15 +434,15 @@ void AppProcessFile(AppContext *ctx) {
     }
   };
 
-  if (mesh.mainBuffer.numVertices) {
-    MakeBufferSpan(mainOffsets, mesh.mainBuffer);
+  if (model.mainBuffer.numVertices) {
+    MakeBufferSpan(mainOffsets, model.mainBuffer);
   }
 
-  if (mesh.shadowCastBuffer.numVertices) {
-    MakeBufferSpan(shadowCastOffsets, mesh.shadowCastBuffer);
+  if (model.shadowCastBuffer.numVertices) {
+    MakeBufferSpan(shadowCastOffsets, model.shadowCastBuffer);
   }
 
-  if (mesh.bakedShadowBuffer.numVertices) {
+  if (model.bakedShadowBuffer.numVertices) {
     throw std::runtime_error("Shadow atlas is not supported");
   }
 
@@ -481,22 +477,37 @@ void AppProcessFile(AppContext *ctx) {
     return nodeIndex;
   };
 
-  for (auto &p : mesh.primitives) {
+  for (auto &p : model.primitives) {
     if (p.name.starts_with("RawGeometry")) {
       continue;
     } else if (p.name.ends_with("_CompiledShadowShader")) {
       size_t nodeId =
-          MakePrimitive(shadowCastOffsets, p, mesh.shadowCastBuffer);
+          MakePrimitive(shadowCastOffsets, p, model.shadowCastBuffer);
       main.nodes.at(volumeShadowNode).children.emplace_back(nodeId);
     } else {
-      size_t nodeId = MakePrimitive(mainOffsets, p, mesh.mainBuffer);
+      size_t nodeId = MakePrimitive(mainOffsets, p, model.mainBuffer);
       main.nodes.at(renderNode).children.emplace_back(nodeId);
     }
   }
 
   main.extensionsRequired.emplace_back("KHR_mesh_quantization");
   main.extensionsUsed.emplace_back("KHR_mesh_quantization");
-  BinWritterRef wr(ctx->NewFile(ctx->workingFile.ChangeExtension2("glb")).str);
+  std::string lodId;
+  if (lodIndex > 0) {
+    lodId.append("lod" + std::to_string(lodIndex));
+  }
+  lodId.append(".glb");
+  BinWritterRef wr(ctx->NewFile(ctx->workingFile.ChangeExtension(lodId)).str);
 
   main.FinishAndSave(wr, std::string(ctx->workingFile.GetFolder()));
+}
+
+void AppProcessFile(AppContext *ctx) {
+  BinReaderRef rd(ctx->GetStream());
+  SBM::Header hdr;
+  rd.Read(hdr);
+
+  for (size_t i = 0; i < hdr.lods.size(); i++) {
+    SaveLod(ctx, hdr, i);
+  }
 }
