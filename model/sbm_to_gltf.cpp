@@ -128,10 +128,22 @@ gltf::Attributes MakeBuffer(std::span<Vertex64> vtSpan, GLTFModel &main) {
 
   gltf::Attributes attrs;
   main.WritePositions(attrs, proxy, vtSpan.size());
+  proxy.buffer += 12;
 
   proxy.usage = uni::PrimitiveDescriptor::Usage_e::Normal;
-  proxy.buffer += 12;
   attrs["NORMAL"] = main.WriteNormals16(proxy, vtSpan.size());
+  proxy.buffer += 12;
+
+  proxy.usage = uni::PrimitiveDescriptor::Usage_e::VertexColor;
+  proxy.type =
+      uni::FormatDescr{uni::FormatType::UNORM, uni::DataType::R8G8B8A8};
+  main.WriteVertexColor(attrs, proxy, vtSpan.size());
+  proxy.buffer += 4;
+
+  proxy.usage = uni::PrimitiveDescriptor::Usage_e::TextureCoordiante;
+  proxy.type = uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32};
+  main.WriteTexCoord(attrs, proxy, vtSpan.size());
+  proxy.buffer += 8;
 
   return attrs;
 }
@@ -146,10 +158,11 @@ gltf::Attributes MakeBuffer(std::span<Vertex52> vtSpan, GLTFModel &main) {
 
   gltf::Attributes attrs;
   main.WritePositions(attrs, proxy, vtSpan.size());
+  proxy.buffer += 16;
 
   proxy.usage = uni::PrimitiveDescriptor::Usage_e::Normal;
-  proxy.buffer += 16;
   attrs["NORMAL"] = main.WriteNormals16(proxy, vtSpan.size());
+  proxy.buffer += 12;
 
   auto &stream = main.GetVt4();
   {
@@ -178,6 +191,11 @@ gltf::Attributes MakeBuffer(std::span<Vertex52> vtSpan, GLTFModel &main) {
     }
   }
 
+  proxy.usage = uni::PrimitiveDescriptor::Usage_e::TextureCoordiante;
+  proxy.type = uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32};
+  main.WriteTexCoord(attrs, proxy, vtSpan.size());
+  proxy.buffer += 8;
+
   return attrs;
 }
 
@@ -191,10 +209,22 @@ gltf::Attributes MakeBuffer(std::span<Vertex48> vtSpan, GLTFModel &main) {
 
   gltf::Attributes attrs;
   main.WritePositions(attrs, proxy, vtSpan.size());
+  proxy.buffer += 12;
 
   proxy.usage = uni::PrimitiveDescriptor::Usage_e::Normal;
-  proxy.buffer += 12;
   attrs["NORMAL"] = main.WriteNormals16(proxy, vtSpan.size());
+  proxy.buffer += 12;
+
+  proxy.usage = uni::PrimitiveDescriptor::Usage_e::VertexColor;
+  proxy.type =
+      uni::FormatDescr{uni::FormatType::UNORM, uni::DataType::R8G8B8A8};
+  main.WriteVertexColor(attrs, proxy, vtSpan.size());
+  proxy.buffer += 4;
+
+  proxy.usage = uni::PrimitiveDescriptor::Usage_e::TextureCoordiante;
+  proxy.type = uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32};
+  main.WriteTexCoord(attrs, proxy, vtSpan.size());
+  proxy.buffer += 8;
 
   return attrs;
 }

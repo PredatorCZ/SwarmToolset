@@ -42,6 +42,7 @@ add_spike_subdir(cache)
 add_spike_subdir(save)
 add_spike_subdir(scripts)
 add_spike_subdir(model)
+add_spike_subdir(anim)
 
 if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Release)
   add_spike_subdir(dev)
