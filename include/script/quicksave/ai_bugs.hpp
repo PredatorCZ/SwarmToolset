@@ -15,9 +15,9 @@ struct AIBugWarriorBaseQuicksave {
   bool bElectrify;
   bool bBurntModelSwitch;
   bool cosmeticVulnerability;
-  bool IgnoreRadius;
+  float IgnoreRadius;
   bool IgnoreUseDeltaY;
-  bool IgnoreDeltaY;
+  float IgnoreDeltaY;
   void ReflectorTag();
 };
 
@@ -36,7 +36,7 @@ struct AIBugFlyerBaseQuicksave {
   bool forceFindPosition;
   float timeSinceLastScreech;
   Vector HitVec;
-  Resource pAnim;
+  uint32 pAnim;
   float animTime[2];
   float desSpeed;
   bool bLaden;
@@ -84,9 +84,9 @@ struct AIBugBabyPlasmaQuicksave {
   ResourceRef animType;
   uint32 pAnim;
   float aiAnimTime[2];
+  float multiWPDeltaHealth;
   bool bFightStrike;
   bool canIncreaseAccuracy;
-  bool multiWPDeltaHealth;
   bool launchedFireball;
   AIBugBabyPlasmaSpecialMode psSpecialMode;
   float minMoveTime;

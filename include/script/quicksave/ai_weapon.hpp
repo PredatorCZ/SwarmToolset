@@ -53,8 +53,8 @@ struct AIProjectileLauncherQuicksave {
 struct AIWeaponRailgunQuicksave {
   bool bDesReload;
   uint32 zoomStage;
-  bool modeStartZoom;
-  bool modeEndZoom;
+  float modeStartZoom;
+  float modeEndZoom;
   void ReflectorTag();
 };
 

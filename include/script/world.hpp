@@ -113,8 +113,8 @@ struct WorldObjectUsableAABB : WorldObject {
   AABB aabb;
   ResourceRef targetObject;
   ResourceRef usePrompt;
-  bool cannotUsePrompt;
-  bool activeArea;
+  ResourceRef cannotUsePrompt;
+  uint32 activeArea;
   ResourceRef invItem;
   WorldObjectUsableAABBQuicksave worldObjectUsableAABBQuicksave;
 };
@@ -151,7 +151,7 @@ struct ModelAnimated : ModelDetailDynamic {
   bool playSound;
   ResourceRef sound;
   ResourceArray soundList;
-  bool soundBone;
+  uint32 soundBone;
   bool loopOnAnim;
   bool materialEffects;
   ModelAnimatedQuicksave modelAnimatedQuicksave;

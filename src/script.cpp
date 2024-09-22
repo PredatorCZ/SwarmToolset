@@ -1,5 +1,6 @@
 #include "script.hpp"
 #include "script/core.hpp"
+#include "spike/master_printer.hpp"
 #include "spike/reflect/reflector.hpp"
 #include <istream>
 
@@ -20,6 +21,7 @@ struct ScriptParserImpl : ScriptParser {
           SkipLine();
           break;
         }
+        [[fallthrough]];
       case '[':
       case ']':
       case ':':
@@ -51,6 +53,7 @@ struct ScriptParserImpl : ScriptParser {
           prevChar = curChar;
           break;
         }
+        [[fallthrough]];
       case '[':
       case ']':
       case '{':
@@ -65,11 +68,14 @@ struct ScriptParserImpl : ScriptParser {
         if (!bufferIter) {
           break;
         }
+        [[fallthrough]];
       default:
         prevChar = curChar;
         curBuffer[bufferIter++] = curChar;
       }
     }
+
+    throw std::runtime_error("Format error");
   };
 
   void GetClass() {
@@ -92,6 +98,7 @@ struct ScriptParserImpl : ScriptParser {
           prevChar = curChar;
           break;
         }
+        [[fallthrough]];
       case '[':
       case ']':
       case '{':
@@ -144,6 +151,7 @@ struct ScriptParserImpl : ScriptParser {
           SkipLine();
           break;
         }
+        [[fallthrough]];
       case '[':
       case ']':
       case ':':
@@ -173,6 +181,7 @@ struct ScriptParserImpl : ScriptParser {
           SkipLine();
           break;
         }
+        [[fallthrough]];
       case ']':
       case ':':
       case '{':
@@ -187,6 +196,8 @@ struct ScriptParserImpl : ScriptParser {
         return VL_SUBCLASS;
       }
     }
+
+    throw std::runtime_error("Format error");
   }
 
   void ProcessClassMembers() {
@@ -282,31 +293,7 @@ struct ScriptParserImpl : ScriptParser {
   }
 };
 
-struct ResourceHolder {
-  void *data;
-  const reflectorStatic *refl;
-
-  ResourceHolder(const reflectorStatic *refl_) : refl(refl_) {
-    data = malloc(refl->classSize);
-    refl->methods.constructor(data);
-  }
-
-  ResourceHolder(const ResourceHolder &) = delete;
-  ResourceHolder(ResourceHolder &&other) : data(other.data), refl(other.refl) {
-    other.data = nullptr;
-  }
-
-  ~ResourceHolder() {
-    if (data) {
-      refl->methods.destructor(data);
-      free(data);
-    }
-  }
-};
-
-std::vector<ResourceHolder> RESOURCES;
-
-Resource* AllocClass(std::string_view className) {
+std::unique_ptr<Resource> AllocClass(std::string_view className) {
   if (!className.starts_with("class_")) {
     throw std::runtime_error("class must start with class_");
   }
@@ -319,12 +306,159 @@ Resource* AllocClass(std::string_view className) {
   }
 
   auto rClass = found->second;
-  auto &res = RESOURCES.emplace_back(rClass);
-  return static_cast<Resource*>(res.data);
+  void *data = malloc(rClass->classSize);
+  if (!rClass->methods.constructor) {
+    throw std::runtime_error("class " + std::string(className) +
+                             " not constructible");
+  }
+  rClass->methods.constructor(data);
+  Resource *resData = static_cast<Resource *>(data);
+  resData->refl = rClass;
+
+  return std::unique_ptr<Resource>(resData);
 }
 
 void ScriptParser::Process() {
   static_cast<ScriptParserImpl *>(this)->Process();
 }
 
-ResourceRef::ResourceRef(Resource *res) {}
+struct ReflectedInstanceFriend : ReflectedInstance {
+  using ReflectedInstance::rfStatic;
+};
+
+class ReflectorMemberFriend : public ReflectorMember {
+public:
+  using ReflectorMember::ReflectorMember;
+  using ReflectorMember::operator=;
+  operator const ReflType &() const {
+    return ReflectedInstanceFriend{data}.rfStatic->types[id];
+  }
+};
+
+void LoadScript(std::istream &str,
+                std::vector<std::unique_ptr<Resource>> &resources) {
+  std::vector<ReflectorPureWrap> classStack;
+  ReflectorMemberFriend member{{}, 0};
+  int curMapItem = -1;
+  int curArrayItem = -1;
+  int index = -1;
+
+  auto NewClass = [&](std::string_view name) {
+    Resource *res = resources.emplace_back(AllocClass(name)).get();
+    classStack.clear();
+    classStack.emplace_back(ReflectedInstance{res->refl, res});
+  };
+
+  auto NewMember = [&](std::string_view name, ValueType type) {
+    if (classStack.empty()) {
+      return;
+    }
+
+    if (name.size() > 3 && name.back() == '_' &&
+        name.at(name.size() - 3) == '_') {
+      index = name.at(name.size() - 2) - '0';
+      name.remove_suffix(3);
+    }
+
+    ReflectorPureWrap &lastClass = classStack.back();
+
+    if (curMapItem > -1) {
+      lastClass = member.ReflectedSubClass(curMapItem++);
+      // there isn't map of subclasses so far
+      lastClass["key"] = name;
+      return;
+    }
+
+    member = lastClass[name];
+
+    if (!member) {
+      if (type == VL_SUBCLASS) {
+        classStack.emplace_back(ReflectedInstance{nullptr, nullptr});
+      }
+      return;
+    }
+
+    if (type == VL_SUBCLASS) {
+      ReflType type = member;
+      curMapItem = (type.container == REFContainer::ContainerVectorMap) - 1;
+      classStack.emplace_back(
+          member.ReflectedSubClass(std::max(0, int(index))));
+      return;
+    }
+
+    curArrayItem = (type == VL_ARRAY) - 1;
+
+    if (!member) {
+      PrintError("Member: ", name,
+                 " not found in class: ", lastClass.ClassName());
+      return;
+    }
+  };
+
+  auto SetValue = [&](ReflectorMemberFriend member, std::string_view name) {
+    if (!member) {
+      return;
+    }
+    if (member.IsReflectedSubClass()) {
+      ReflectorPureWrap subClass(
+          member.ReflectedSubClass(std::max(curArrayItem, 0)));
+
+      if (subClass.data) {
+        if (subClass.ClassName() == "ResourceRef") {
+          subClass["asString"] = name;
+          return;
+        } else if (subClass.ClassName() == "Color") {
+          member = subClass["raw"];
+          return;
+        }
+      }
+    }
+
+    if (ReflType type = member; type.type == REFType::Bool) {
+      int isTrue = name.front() == '1';
+      if (!isTrue && name.front() != '0') {
+        ReflectorPureWrap &lastClass = classStack.back();
+        ReflectedInstanceFriend inst{lastClass.data};
+        PrintWarning("Expected boolean for", lastClass.ClassName(),
+                     "::", inst.rfStatic->typeNames[type.index],
+                     " got: ", name);
+        return;
+      }
+      member.ReflectValue(isTrue, curArrayItem);
+      if (curArrayItem > -1) {
+        curArrayItem++;
+      }
+      return;
+    }
+
+    member.ReflectValue(name, std::max(index, curArrayItem));
+    if (curArrayItem > -1) {
+      curArrayItem++;
+    }
+  };
+
+  auto NewValue = [&](std::string_view name) {
+    if (curMapItem > -1) {
+      ReflectorPureWrap lastClass = classStack.back();
+      auto sub = lastClass["value"];
+      SetValue(reinterpret_cast<ReflectorMemberFriend &>(sub), name);
+      return;
+    }
+
+    SetValue(member, name);
+  };
+
+  ScriptParserImpl parser{str};
+  parser.newClass = NewClass;
+  parser.newMember = NewMember;
+  parser.newValue = NewValue;
+  parser.subclassEnd = [&] {
+    if (classStack.empty()) {
+      throw std::logic_error("wtf?");
+    }
+    classStack.pop_back();
+    curMapItem = -1;
+  };
+
+  parser.Process();
+}

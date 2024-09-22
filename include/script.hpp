@@ -2,6 +2,7 @@
 #include <functional>
 #include <iosfwd>
 #include <string_view>
+#include <memory>
 
 enum ValueType {
   VL_SIMPLE,   // in ""
@@ -24,3 +25,7 @@ private:
   char curBuffer[0x1000];
   char prevChar = 0;
 };
+
+struct Resource;
+
+std::unique_ptr<Resource> AllocClass(std::string_view className);

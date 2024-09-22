@@ -100,13 +100,6 @@ struct EventAIAction : ResourcePack {
   ResourceRef triggererRef;
 };
 
-enum AIHST {
-  AIHST_NONE,
-  AIHST_ANY,
-  AIHST_TROOPERDEFEND,
-  AIHST_TROOPERATTACK,
-};
-
 struct AISquadTransients {
   int32 dummy;
   void ReflectorTag();

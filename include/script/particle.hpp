@@ -2,8 +2,8 @@
 
 struct ParticleSystemGeneric : ResourcePack {
   ResourceRef particleResource;
-  ResourceRef aoundStart;
-  ResourceRef aoundStop;
+  ResourceRef soundStart;
+  ResourceRef soundStop;
   bool soundStartLoop;
   bool soundStopLoop;
   bool autoStart;
@@ -74,6 +74,6 @@ struct ParticleSystemExplosion : ResourcePack {
 
 struct ParticleSystemTerrainDust : ParticleSystemDust {
   uint32 numNodes;
-  bool desNodeSize;
+  uint32 desNodeSize;
   Vector kickupArea;
 };

@@ -13,7 +13,7 @@ struct ChatLine : ResourcePack {
   ResourceRef aiEntity;
   float delay;
   ChatLinePriority priority;
-  bool order;
+  float order;
   bool subtitled;
   ResourceRef speechType;
 };

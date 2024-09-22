@@ -1,5 +1,9 @@
 #include "core.hpp"
 
+struct TextureVelocity : Vector2 {
+  void ReflectorTag();
+};
+
 struct ResourceShaderBumpTexBlend2 : ResourcePack {
   AFileInfo diffuseTexture1;
   AFileInfo diffuseTexture2;
@@ -28,8 +32,8 @@ struct ResourceShaderOverlay : ResourcePack {
   float diffuseVOffset;
   float normalUOffset;
   float normalVOffset;
-  Vector2 textureVelocity;
-  bool depthBias;
+  TextureVelocity textureVelocity;
+  uint32 depthBias;
   bool blended;
 };
 
@@ -77,7 +81,7 @@ struct ResourceShaderUnlit : ResourcePack {
   BLEND srcBlend;
   BLEND destBlend;
   float pulseFrequency;
-  Vector2 textureVelocity;
+  TextureVelocity textureVelocity;
   float fogFactor;
   float fogOutFactor;
   bool blended;
@@ -111,7 +115,7 @@ struct ResourceShaderGlow : ResourcePack {
   float glowVScale;
   float emissiveFactor;
   float glowFactor;
-  Vector2 textureVelocity;
+  TextureVelocity textureVelocity;
   float fogFactor;
   bool blended;
 };
@@ -120,7 +124,7 @@ struct ResourceShaderTintDistort : ResourcePack {
   AFileInfo tintTexture;
   AFileInfo distortTexture;
   Color ambient;
-  Vector2 textureVelocity;
+  TextureVelocity textureVelocity;
   bool blended;
 };
 

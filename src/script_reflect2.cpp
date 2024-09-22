@@ -3,6 +3,15 @@
 #include "spike/reflect/detail/reflector_class.hpp"
 #include "spike/reflect/detail/reflector_enum.hpp"
 
+REFLECT(ENUMERATION(TDSTYPE),
+  ENUM_MEMBER(TDSTYPE_GLOBALEASY),
+  ENUM_MEMBER(TDSTYPE_GLOBALNORMAL),
+  ENUM_MEMBER(TDSTYPE_GLOBALHARD),
+  ENUM_MEMBER(TDSTYPE_GLOBALVHARD),
+  ENUM_MEMBER(TDSTYPE_LEVEL),
+  ENUM_MEMBER(TDSTYPE_NUM)
+);
+
 REFLECT(BASEDCLASS(ResourcePack, TuningDataScript),
 MEMBER(tdsType, "TDS_Type"));
 

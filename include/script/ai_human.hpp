@@ -32,7 +32,7 @@ struct AIHuman : AIWorldObject {
   bool gunVisible;
   bool dropToGround;
   bool doSalute;
-  bool saluteRadius;
+  float saluteRadius;
   AIHumanQuicksave aiHumanQuicksave;
 };
 

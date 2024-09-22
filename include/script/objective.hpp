@@ -44,7 +44,7 @@ struct ObjectiveActionStayInVicinity : ResourcePack {
   float resetTime;
   bool resetOnAreaLeave;
   Vector position;
-  float activeArea;
+  uint32 activeArea;
   float pauseArea;
   ResourceRef activeMarkerBox;
   ResourceRef pauseMarkerBox;

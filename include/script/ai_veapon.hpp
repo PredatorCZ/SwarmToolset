@@ -24,9 +24,9 @@ struct AIStaticGunDouble : ModelDetailDynamic {
   AIStaticGunDoubleQuicksave atStaticGunDoubleQuicksave;
   AIStaticGunDoubleQuicksave2 quicksave;
   StaticGunQuicksave staticGunQuicksave;
-  Resource flash1;
-  Resource flash2;
-  Resource tracer;
+  ResourceRef flash1; // empty
+  ResourceRef flash2; // empty
+  ResourceRef tracer; // empty
   bool reloadAfterXMisfires;
 };
 

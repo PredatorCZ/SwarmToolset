@@ -1,10 +1,16 @@
 #pragma once
-#include <vector>
-#include <string>
 #include "spike/io/fileinfo.hpp"
 #include "spike/type/matrix44.hpp"
+#include <string>
+#include <variant>
+#include <vector>
 
-using Color = UCVector4;
+struct Color {
+  uint32 raw;
+  void ReflectorTag();
+};
+
+struct reflectorStatic;
 
 struct AABB {
   Vector min;
@@ -24,6 +30,7 @@ struct Matrix : es::Matrix44 {
 };
 
 struct Resource {
+  const reflectorStatic *refl = nullptr;
   std::string __guid;
   virtual ~Resource() = default;
   void ReflectorTag();
@@ -34,8 +41,11 @@ struct ResourcePack : Resource {
 };
 
 struct ResourceRef {
-  Resource *ref;
-  ResourceRef(Resource *res);
+  std::string asString;
+  union {
+    Resource *asLink = nullptr;
+    uint64 asAddress;
+  };
   void ReflectorTag();
 };
 

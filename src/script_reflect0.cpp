@@ -286,10 +286,50 @@ ENUM_MEMBER(AIFVSM_ASCEND),
 ENUM_MEMBER(AIFVSM_ACCEL)
 );
 
+REFLECT(ENUMERATION(AIFIREFLY),
+ENUM_MEMBER(AIFIREFLY_FIRESPRAY),
+ENUM_MEMBER(AIFIREFLY_FIREBALL)
+);
+
 REFLECT(ENUMERATION(AIBugBabyPlasmaSpecialMode),
 ENUM_MEMBER(NONE),
 ENUM_MEMBER(OUTOFGROUND),
 ENUM_MEMBER(MULTIWAYPOINT_NETWORK)
+);
+
+REFLECT(ENUMERATION(SubObjectivePositionType),
+ENUM_MEMBER(None),
+ENUM_MEMBER(WorldPosition),
+ENUM_MEMBER(WorldObject)
+);
+
+REFLECT(ENUMERATION(AISM),
+ENUM_MEMBER(AISM_NONE),
+ENUM_MEMBER(AISM_PLAYANIM),
+ENUM_MEMBER(AISM_OUTOFGROUND),
+ENUM_MEMBER(AISM_JUMP),
+ENUM_MEMBER(AISM_BEENHIT),
+ENUM_MEMBER(AISM_TANKERBUGL2),
+ENUM_MEMBER(AISM_VEHICLELAND),
+ENUM_MEMBER(AISM_VEHICLETAKEOFF),
+ENUM_MEMBER(AISM_DROPSHIPFLYTOHOVER),
+ENUM_MEMBER(AISM_DROPSHIPHOVER),
+ENUM_MEMBER(AISM_DROPSHIPHOVERTOLAND),
+ENUM_MEMBER(AISM_MANSTATICGUN)
+);
+
+REFLECT(ENUMERATION(AIHS),
+ENUM_MEMBER(AIHS_STATIONARY),
+ENUM_MEMBER(AIHS_WALK),
+ENUM_MEMBER(AIHS_RUN)
+);
+
+REFLECT(ENUMERATION(LIFTSTATE),
+ENUM_MEMBER(LIFTSTATE_AT_BOTTOM),
+ENUM_MEMBER(LIFTSTATE_GOING_UP),
+ENUM_MEMBER(LIFTSTATE_AT_TOP),
+ENUM_MEMBER(LIFTSTATE_GOING_DOWN),
+ENUM_MEMBER(LIFTSTATE_NUM)
 );
 
 REFLECT(CLASS(CollisionFlags),
@@ -302,7 +342,9 @@ MEMBER(sight, "COLTYPE_SIGHT"),
 MEMBER(bullet, "COLTYPE_EFENCE"),
 MEMBER(bullet, "COLTYPE_PARTICLE"));
 
-FWDREFLECTCLASS(ResourceRef);
+REFLECT(CLASS(ResourceRef), MEMBER(asString));
+
+REFLECT(CLASS(Color), MEMBER(raw));
 
 REFLECT(CLASS(Matrix),
 MEMBER(v[0].x, "m11"),
@@ -956,14 +998,14 @@ MEMBER(animType, "m_AnimType"),
 MEMBER(pAnim, "m_pAnim"),
 MEMBER(aiAnimTime, "m_AIAnimTime"),
 MEMBER(bFightStrike, "m_bFightStrike"),
-MEMBER(canIncreaseAccuracy, "m_LaunchedFireball"),
-MEMBER(multiWPDeltaHealth, "m_PBSpecialMode"),
-MEMBER(launchedFireball, "m_minMoveTime"),
-MEMBER(psSpecialMode, "m_canIncreaseAccuracy"),
-MEMBER(minMoveTime, "m_multiWPDeltaHealth"),
-MEMBER(headElevation, "m_currentVarianceIndex"),
-MEMBER(currentVarianceIndex, "m_pSpray"),
-MEMBER(pSpray, "m_headElevation"),
+MEMBER(launchedFireball, "m_LaunchedFireball"),
+MEMBER(psSpecialMode, "m_PBSpecialMode"),
+MEMBER(minMoveTime, "m_minMoveTime"),
+MEMBER(canIncreaseAccuracy, "m_canIncreaseAccuracy"),
+MEMBER(multiWPDeltaHealth, "m_multiWPDeltaHealth"),
+MEMBER(currentVarianceIndex, "m_currentVarianceIndex"),
+MEMBER(pSpray, "m_pSpray"),
+MEMBER(headElevation, "m_headElevation"),
 MEMBER(pNucBlastEffect1, "m_pNucBlastEffect1"),
 MEMBER(pNucBlastEffect2, "m_pNucBlastEffect2"));
 

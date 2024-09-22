@@ -18,6 +18,8 @@ template <> struct _getType<AFileInfo> : reflTypeDefault_ {
   static constexpr uint8 SIZE = 0;
 };
 
+#define ENUM_ALIAS(which, alias) EnumProxy { alias, uint64(enum_type::which) }
+
 REFLECT(ENUMERATION(COLLIDABLE),
 ENUM_MEMBER(COLLIDABLE_NONE),
 ENUM_MEMBER(COLLIDABLE_BOUNDINGBOX),
@@ -41,12 +43,6 @@ ENUM_MEMBER(GITYPE_MULTIPLAYER_EXTRAS),
 ENUM_MEMBER(GITYPE_NUM_TYPES)
 );
 
-REFLECT(ENUMERATION(SubObjectivePositionType),
-ENUM_MEMBER(None),
-ENUM_MEMBER(WorldPosition),
-ENUM_MEMBER(WorldObject)
-);
-
 REFLECT(ENUMERATION(LIGHT),
 ENUM_MEMBER(LIGHT_DIRECTIONAL),
 ENUM_MEMBER(LIGHT_POINT),
@@ -54,12 +50,12 @@ ENUM_MEMBER(LIGHT_SPOT)
 );
 
 REFLECT(ENUMERATION(ObjectiveState),
-ENUM_MEMBER(Nostate),
+ENUM_ALIAS(Nostate, "No state"),
 ENUM_MEMBER(Preamble),
 ENUM_MEMBER(Main),
 ENUM_MEMBER(Success),
-ENUM_MEMBER(Partialfailure),
-ENUM_MEMBER(Totalfailure),
+ENUM_ALIAS(Partialfailure, "Partial failure"),
+ENUM_ALIAS(Totalfailure, "Total failure"),
 ENUM_MEMBER(Complete)
 );
 
@@ -70,7 +66,8 @@ ENUM_MEMBER(DISTORT)
 );
 
 REFLECT(ENUMERATION(SoundType),
-ENUM_MEMBER(SpecialFX),
+ENUM_ALIAS(SpecialFX, "Special FX"),
+ENUM_ALIAS(SpecialFX, "Special_FX"),
 ENUM_MEMBER(Music),
 ENUM_MEMBER(Speech)
 );
@@ -110,10 +107,12 @@ ENUM_MEMBER(NO_MATERIALS_SHADOW),
 ENUM_MEMBER(PER_MATERIAL_SHADOW)
 );
 
+#define ENUM_PRIORITY(which) EnumProxy { #which " Priority", uint64(ChatLinePriority::which) }
+
 REFLECT(ENUMERATION(ChatLinePriority),
-ENUM_MEMBER(Low),
-ENUM_MEMBER(Medium),
-ENUM_MEMBER(High)
+ENUM_PRIORITY(Low),
+ENUM_PRIORITY(Medium),
+ENUM_PRIORITY(High)
 );
 
 REFLECT(ENUMERATION(ModelType),
@@ -140,6 +139,9 @@ ENUM_MEMBER(Highest)
 FWDREFLECTCLASS(ResourceRef);
 FWDREFLECTCLASS(AABB);
 FWDREFLECTCLASS(CollisionFlags);
+FWDREFLECTCLASS(Color);
+FWDREFLECTENUMERATION(BLEND);
+FWDREFLECTENUMERATION(SubObjectivePositionType);
 
 REFLECT(BASEDCLASS(ResourcePack, CompiledTerrain));
 
@@ -203,8 +205,8 @@ MEMBER(collidableRanges, "Collidable_Ranges"));
 
 REFLECT(BASEDCLASS(ResourcePack, ParticleSystemGeneric),
 MEMBER(particleResource, "ParticleResource"),
-MEMBER(soundStartLoop, "SoundStart"),
-MEMBER(soundStartLoop, "SoundStop"),
+MEMBER(soundStart, "SoundStart"),
+MEMBER(soundStop, "SoundStop"),
 MEMBER(soundStartLoop, "SoundStartLoop"),
 MEMBER(soundStopLoop, "SoundStopLoop"),
 MEMBER(autoStart, "AutoStart"),
@@ -439,7 +441,7 @@ MEMBER(parTime, "ParTime"),
 MEMBER(slBestTime, "SLBestTime"));
 
 REFLECT(BASEDCLASS(Resource, GameSession),
-MEMBER(filesDirs,"Global_Scripts_Excluded"),
+MEMBER(globalScriptsExcluded,"Global_Scripts_Excluded"),
 MEMBER(filesDirs, "FilesDirs"),
 MEMBER(resources, "Resources"),
 MEMBER(campaign, "Campaign"),
@@ -870,6 +872,8 @@ MEMBER(materialEyes, "MaterialEyes"),
 MEMBER(materialRicochet, "MaterialRicochet"),
 MEMBER(materialDeathBone, "MaterialDeathBone"));
 
+REFLECT(BASEDCLASS(ResourcePack, ResourceOverrider));
+
 REFLECT(CLASS(ResourceMaterialPhysicsProperties),
 MEMBER(density, "Density"),
 MEMBER(friction, "Friction"),
@@ -921,7 +925,7 @@ MEMBER(damageProperties, "DamageProperties"),
 MEMBER(damageEffects, "DamageEffects"),
 MEMBER(damagingRates, "DamagingRates"),
 MEMBER(dustParticleResource, "DustParticleResource"),
-MEMBER(physicsProperties, "PlayerFootstepResource"),
+MEMBER(playerFootstepResource, "PlayerFootstepResource"),
 MEMBER(materialName,"HumanFootstepResource"),
 MEMBER(materialName,"WarriorBaseFootstepResource"),
 MEMBER(dustRingParticleResouce, "DustRingParticleResource"));
@@ -1682,6 +1686,10 @@ MEMBER(textureInfo, "TextureInfo"),
 MEMBER(spurt, "Spurt"),
 MEMBER(spray, "Spray"));
 
+REFLECT(CLASS(TextureVelocity),
+MEMBER(x, "U"),
+MEMBER(y, "V"));
+
 REFLECT(BASEDCLASS(ResourcePack, ResourceShaderBumpTexBlend2),
 MEMBER(diffuseTexture1, "Diffuse Texture 1"),
 MEMBER(diffuseTexture2, "Diffuse Texture 2"),
@@ -1817,7 +1825,7 @@ MEMBER(position, "Position"),
 MEMBER(hideMarkerWhenThere, "HideMarkerWhenThere"),
 MEMBER(markerRadius, "MarkerRadius"),
 MEMBER(trackableObject, "TrackableObject"),
-MEMBER(markerRadius, "Actions"),
+MEMBER(actions, "Actions"),
 MEMBER(subObjectiveQuicksave,"QUICKSAVE_SubObjective"));
 
 REFLECT(BASEDCLASS(ResourcePack, ObjectiveActionStayInVicinity),

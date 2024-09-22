@@ -57,9 +57,9 @@ struct AIAmmoBundle : ModelDetailDynamic {
 };
 
 struct AIPickupItemHealth : WorldObjectModel {
-  bool reActivateTime;
-  bool active;
+  float reActivateTime;
   float timeHidden;
+  bool active;
   bool neverHide;
   bool onceOnly;
   float pickupRadius;

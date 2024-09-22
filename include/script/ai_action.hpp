@@ -132,7 +132,7 @@ struct AIA_Warrior_SetIgnoreRadius : AIActionTarget {
 struct AIA_Human_DoSalute : AIActionTarget {};
 
 struct AIA_Human_SetNextPointAccurate : AIActionTarget {
-  bool heading;
+  float heading;
 };
 
 struct AIA_Human_SetKneeling : AIActionTarget {
@@ -200,7 +200,7 @@ struct AIA_Human_SetGunState : AIActionTarget {
 };
 
 struct AIA_Human_GoToHotSpots : AIActionTarget {
-  AIHS hotSpotType;
+  AIHST hotSpotType;
   float radius;
 };
 
@@ -249,7 +249,7 @@ struct AIA_Squad_AddMember : AIA_Squad_RemoveMember {};
 
 struct AIA_Squad_GoToHotSpots : AIAction {
   ResourceRef squad;
-  AIHS hotSpotType;
+  AIHST hotSpotType;
   float radius;
 };
 
@@ -339,7 +339,7 @@ struct AIA_LaunchMenu : AIAction {
 
 struct AIA_PlaySound : AIActionTarget {
   ResourceRef source;
-  bool soundBone;
+  uint32 soundBone;
 };
 
 struct AIA_EnableSpeechBank : AIAction {

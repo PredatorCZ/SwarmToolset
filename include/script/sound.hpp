@@ -50,6 +50,6 @@ struct AmbientSoundObject : WorldObject {
   ResourceRef playSound;
   bool startImmediately;
   Vector position;
-  bool loopDelayLength;
+  uint32 loopDelayLength;
   bool atmospheric;
 };
