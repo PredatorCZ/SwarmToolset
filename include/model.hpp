@@ -85,8 +85,14 @@ struct Bone {
   void Write(BinWritterRef wr) const;
 };
 
+enum class ModelType : uint8 {
+  Rigid,
+  Blended,
+  RigidPreLit,
+};
+
 struct RenderModel {
-  uint8 modelType;
+  ModelType modelType;
   Buffer mainBuffer{};
   Buffer shadowCastBuffer{};
   Buffer bakedShadowBuffer{};

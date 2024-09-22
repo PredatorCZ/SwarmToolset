@@ -132,7 +132,6 @@ void SBM::Primitive::Read(BinReaderRef rd) {
   rd.ReadString(materialName);
   rd.Read(numVertices);
   rd.Read(unk0);
-  assert(unk0 == 4);
   rd.Read(numIndices);
   rd.Read(vertexBase);
   rd.Read(vertexOffset);
