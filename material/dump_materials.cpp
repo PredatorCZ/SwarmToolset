@@ -64,7 +64,7 @@ void AppProcessFile(AppContext *ctx) {
     auto reflected = GetReflectedMaterial(m);
     ReflectorPureWrap refMaterial(reflected);
 
-    const size_t numMembers = refMaterial.GetNumReflectedValues();
+    const size_t numMembers = refMaterial.NumReflectedValues();
 
     for (size_t i = 0; i < numMembers; i++) {
       std::string_view memberName(
@@ -72,7 +72,7 @@ void AppProcessFile(AppContext *ctx) {
               .rfStatic->typeNames[i]);
 
       if (memberName.ends_with("Texture")) {
-        std::string value(refMaterial.GetReflectedValue(i));
+        std::string value(refMaterial[i]);
         std::transform(value.begin(), value.end(), value.begin(),
                        [](char c) -> char {
                          if (c == '\\') {
@@ -85,19 +85,20 @@ void AppProcessFile(AppContext *ctx) {
       }
     }
 
-    ReflectorXMLUtil::SaveV2a(refMaterial, doc.append_child(refMaterial.GetClassName().data()),
-                              ReflectorXMLUtil::Flags_StringAsAttribute);
+    ReflectorXMLUtil::Save(refMaterial,
+                           doc.append_child(refMaterial.ClassName().data()),
+                           ReflectorXMLUtil::Flags_StringAsAttribute);
   }
 
   std::string buffer("\n");
 
-  for(auto &t : allTextures) {
+  for (auto &t : allTextures) {
     buffer.append("    ");
     buffer.append(t);
     buffer.push_back('\n');
   }
 
-  doc.prepend_child("textures").append_buffer(buffer.data(),buffer.size());
+  doc.prepend_child("textures").append_buffer(buffer.data(), buffer.size());
 
   doc.save(
       ctx->NewFile(std::string(ctx->workingFile.GetFullPath()) + ".xml").str,

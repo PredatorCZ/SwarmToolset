@@ -98,295 +98,164 @@ struct Vertex20 {
 
 static_assert(sizeof(Vertex20) == 20);
 
-struct DescProxy : uni::PrimitiveDescriptor {
-  const char *buffer;
-  size_t stride;
-  size_t offset = 0;
-  size_t index = 0;
-  Usage_e usage;
-  uni::FormatDescr type;
-
-  const char *RawBuffer() const override { return buffer; }
-  size_t Stride() const override { return stride; }
-  size_t Offset() const override { return offset; }
-  size_t Index() const override { return index; }
-  Usage_e Usage() const override { return usage; }
-  uni::FormatDescr Type() const override { return type; }
-  uni::BBOX UnpackData() const override { return {}; }
-  UnpackDataType_e UnpackDataType() const override {
-    return UnpackDataType_e::None;
-  }
-};
-
-gltf::Attributes MakeBuffer(std::span<Vertex64> vtSpan, GLTFModel &main) {
-  DescProxy proxy;
-  proxy.buffer = reinterpret_cast<const char *>(vtSpan.data());
-  proxy.stride = 64;
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Position;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32B32};
-
-  gltf::Attributes attrs;
-  main.WritePositions(attrs, proxy, vtSpan.size());
-  proxy.buffer += 12;
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Normal;
-  attrs["NORMAL"] = main.WriteNormals16(proxy, vtSpan.size());
-  proxy.buffer += 12;
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::VertexColor;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::UNORM, uni::DataType::R8G8B8A8};
-  main.WriteVertexColor(attrs, proxy, vtSpan.size());
-  proxy.buffer += 4;
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::TextureCoordiante;
-  proxy.type = uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32};
-  main.WriteTexCoord(attrs, proxy, vtSpan.size());
-  proxy.buffer += 8;
-
-  return attrs;
-}
-
-gltf::Attributes MakeBuffer(std::span<Vertex52> vtSpan, GLTFModel &main) {
-  DescProxy proxy;
-  proxy.buffer = reinterpret_cast<const char *>(vtSpan.data());
-  proxy.stride = 52;
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Position;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32B32};
-
-  gltf::Attributes attrs;
-  main.WritePositions(attrs, proxy, vtSpan.size());
-  proxy.buffer += 16;
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Normal;
-  attrs["NORMAL"] = main.WriteNormals16(proxy, vtSpan.size());
-  proxy.buffer += 12;
-
-  auto &stream = main.GetVt4();
-  {
-    auto [acc, index] = main.NewAccessor(stream, 4);
-    acc.count = vtSpan.size();
-    acc.componentType = gltf::Accessor::ComponentType::UnsignedByte;
-    acc.type = gltf::Accessor::Type::Vec4;
-    attrs["JOINTS_0"] = index;
-
-    for (auto &v : vtSpan) {
-      stream.wr.Write(v.boneId);
-    }
-  }
-
-  {
-    // todo make only one buffer
-    auto [acc, index] = main.NewAccessor(stream, 4);
-    acc.count = vtSpan.size();
-    acc.componentType = gltf::Accessor::ComponentType::UnsignedByte;
-    acc.normalized = true;
-    acc.type = gltf::Accessor::Type::Vec4;
-    attrs["WEIGHTS_0"] = index;
-
-    for (auto &v : vtSpan) {
-      stream.wr.Write(0xff);
-    }
-  }
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::TextureCoordiante;
-  proxy.type = uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32};
-  main.WriteTexCoord(attrs, proxy, vtSpan.size());
-  proxy.buffer += 8;
-
-  return attrs;
-}
-
-gltf::Attributes MakeBuffer(std::span<Vertex48> vtSpan, GLTFModel &main) {
-  DescProxy proxy;
-  proxy.buffer = reinterpret_cast<const char *>(vtSpan.data());
-  proxy.stride = 48;
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Position;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32B32};
-
-  gltf::Attributes attrs;
-  main.WritePositions(attrs, proxy, vtSpan.size());
-  proxy.buffer += 12;
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Normal;
-  attrs["NORMAL"] = main.WriteNormals16(proxy, vtSpan.size());
-  proxy.buffer += 12;
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::VertexColor;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::UNORM, uni::DataType::R8G8B8A8};
-  main.WriteVertexColor(attrs, proxy, vtSpan.size());
-  proxy.buffer += 4;
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::TextureCoordiante;
-  proxy.type = uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32};
-  main.WriteTexCoord(attrs, proxy, vtSpan.size());
-  proxy.buffer += 8;
-
-  return attrs;
-}
-
-gltf::Attributes MakeBuffer(std::span<Vertex28> vtSpan, GLTFModel &main) {
-  DescProxy proxy;
-  proxy.buffer = reinterpret_cast<const char *>(vtSpan.data());
-  proxy.stride = 28;
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Position;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32B32};
-
-  gltf::Attributes attrs;
-  main.WritePositions(attrs, proxy, vtSpan.size());
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Normal;
-  proxy.buffer += 16;
-  attrs["NORMAL"] = main.WriteNormals16(proxy, vtSpan.size());
-
-  auto &stream = main.GetVt4();
-  {
-    auto [acc, index] = main.NewAccessor(stream, 4);
-    acc.count = vtSpan.size();
-    acc.componentType = gltf::Accessor::ComponentType::UnsignedByte;
-    acc.type = gltf::Accessor::Type::Vec4;
-    attrs["JOINTS_0"] = index;
-
-    for (auto &v : vtSpan) {
-      stream.wr.Write(v.boneId);
-    }
-  }
-
-  {
-    // todo make only one buffer
-    auto [acc, index] = main.NewAccessor(stream, 4);
-    acc.count = vtSpan.size();
-    acc.componentType = gltf::Accessor::ComponentType::UnsignedByte;
-    acc.normalized = true;
-    acc.type = gltf::Accessor::Type::Vec4;
-    attrs["WEIGHTS_0"] = index;
-
-    for (auto &v : vtSpan) {
-      stream.wr.Write(0xff);
-    }
-  }
-
-  return attrs;
-}
-
-gltf::Attributes MakeBuffer(std::span<Vertex24> vtSpan, GLTFModel &main) {
-  DescProxy proxy;
-  proxy.buffer = reinterpret_cast<const char *>(vtSpan.data());
-  proxy.stride = 24;
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Position;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32B32};
-
-  gltf::Attributes attrs;
-  main.WritePositions(attrs, proxy, vtSpan.size());
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Normal;
-  proxy.buffer += 12;
-  attrs["NORMAL"] = main.WriteNormals16(proxy, vtSpan.size());
-
-  return attrs;
-}
-
-gltf::Attributes MakeBuffer(std::span<Vertex20> vtSpan, GLTFModel &main) {
-  DescProxy proxy;
-  proxy.buffer = reinterpret_cast<const char *>(vtSpan.data());
-  proxy.stride = 20;
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Position;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32B32};
-
-  gltf::Attributes attrs;
-  main.WritePositions(attrs, proxy, vtSpan.size());
-
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::TextureCoordiante;
-  proxy.buffer += 12;
-  proxy.type.compType = uni::DataType::R32G32;
-  main.WriteTexCoord(attrs, proxy, vtSpan.size());
-
-  return attrs;
-}
-
-gltf::Attributes MakeBuffer(std::span<Vector> vtSpan, GLTFModel &main) {
-  DescProxy proxy;
-  proxy.buffer = reinterpret_cast<const char *>(vtSpan.data());
-  proxy.stride = 12;
-  proxy.usage = uni::PrimitiveDescriptor::Usage_e::Position;
-  proxy.type =
-      uni::FormatDescr{uni::FormatType::FLOAT, uni::DataType::R32G32B32};
-
-  gltf::Attributes attrs;
-  main.WritePositions(attrs, proxy, vtSpan.size());
-
-  return attrs;
-}
-
-struct IndexProxy : uni::IndexArray {
-  const char *buffer;
-  size_t numIndices;
-  size_t indexSize = 2;
-
-  const char *RawIndexBuffer() const override { return buffer; }
-  size_t IndexSize() const override { return indexSize; }
-  size_t NumIndices() const override { return numIndices; }
-};
-
-gltf::Attributes AddBuffer(SBM::Buffer &buffer, GLTFModel &main,
-                           uint32 vertexBase, uint32 numVertices) {
-  gltf::Attributes attributes;
-
-  switch (buffer.vertexStride) {
+std::span<const Attribute> Attributes(uint32 stride) {
+  switch (stride) {
   case 64: {
-    std::span<Vertex64> vtSpan(
-        reinterpret_cast<Vertex64 *>(buffer.vertexBuffer.data()) + vertexBase,
-        numVertices);
-    attributes = MakeBuffer(vtSpan, main);
-    break;
+    static const Attribute ATTRS[]{
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Position,
+        },
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Normal,
+        },
+        {
+            .type = uni::DataType::R8G8B8A8,
+            .format = uni::FormatType::UNORM,
+            .usage = AttributeType::VertexColor,
+        },
+        {
+            .type = uni::DataType::R32G32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::TextureCoordiante,
+        },
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Tangent,
+        },
+        {
+            .type = uni::DataType::R32G32B32A32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Undefined,
+        }};
+    return ATTRS;
   }
   case 52: {
-    std::span<Vertex52> vtSpan(
-        reinterpret_cast<Vertex52 *>(buffer.vertexBuffer.data()) + vertexBase,
-        numVertices);
-    attributes = MakeBuffer(vtSpan, main);
-    break;
+    static const Attribute ATTRS[]{
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Position,
+        },
+        {
+            .type = uni::DataType::R32,
+            .format = uni::FormatType::UINT,
+            .usage = AttributeType::BoneIndices,
+        },
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Normal,
+        },
+        {
+            .type = uni::DataType::R32G32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::TextureCoordiante,
+        },
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Tangent,
+        },
+        {
+            .type = uni::DataType::R32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Undefined,
+        }};
+
+    return ATTRS;
   }
   case 48: {
-    std::span<Vertex48> vtSpan(
-        reinterpret_cast<Vertex48 *>(buffer.vertexBuffer.data()) + vertexBase,
-        numVertices);
-    attributes = MakeBuffer(vtSpan, main);
-    break;
+    static const Attribute ATTRS[]{
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Position,
+        },
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Normal,
+        },
+        {
+            .type = uni::DataType::R8G8B8A8,
+            .format = uni::FormatType::UNORM,
+            .usage = AttributeType::VertexColor,
+        },
+        {
+            .type = uni::DataType::R32G32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::TextureCoordiante,
+        },
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Tangent,
+        },
+    };
+
+    return ATTRS;
   }
   case 28: {
-    std::span<Vertex28> vtSpan(
-        reinterpret_cast<Vertex28 *>(buffer.vertexBuffer.data()) + vertexBase,
-        numVertices);
-    attributes = MakeBuffer(vtSpan, main);
-    break;
+    static const Attribute ATTRS[]{
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Position,
+        },
+        {
+            .type = uni::DataType::R32,
+            .format = uni::FormatType::UINT,
+            .usage = AttributeType::BoneIndices,
+        },
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Normal,
+        },
+    };
+
+    return ATTRS;
   }
   case 24: {
-    std::span<Vertex24> vtSpan(
-        reinterpret_cast<Vertex24 *>(buffer.vertexBuffer.data()) + vertexBase,
-        numVertices);
-    attributes = MakeBuffer(vtSpan, main);
-    break;
+    static const Attribute ATTRS[]{
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Position,
+        },
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Normal,
+        },
+    };
+
+    return ATTRS;
   }
   case 20: {
-    std::span<Vertex20> vtSpan(
-        reinterpret_cast<Vertex20 *>(buffer.vertexBuffer.data()) + vertexBase,
-        numVertices);
-    attributes = MakeBuffer(vtSpan, main);
-    break;
+    static const Attribute ATTRS[]{
+        {
+            .type = uni::DataType::R32G32B32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::Position,
+        },
+        {
+            .type = uni::DataType::R32G32,
+            .format = uni::FormatType::FLOAT,
+            .usage = AttributeType::TextureCoordiante,
+        },
+    };
+
+    return ATTRS;
   }
   default:
     throw std::runtime_error("Unknown vertex layout");
   }
-
-  return attributes;
 }
 
 void SaveLod(AppContext *ctx, SBM::Header &hdr, size_t lodIndex) {
@@ -403,7 +272,7 @@ void SaveLod(AppContext *ctx, SBM::Header &hdr, size_t lodIndex) {
     auto reflMatInst = GetReflectedMaterial(m);
     ReflectorPureWrap reflMat(reflMatInst);
     auto &gMat = main.materials.emplace_back();
-    gMat.name = reflMat.GetReflectedValue("materialName");
+    gMat.name = reflMat["materialName"].ReflectedValue();
   }
 
   std::map<std::string, size_t> bones;
@@ -460,7 +329,9 @@ void SaveLod(AppContext *ctx, SBM::Header &hdr, size_t lodIndex) {
       uint32 lastVertex =
           nextIt == offsets.end() ? buffer.numVertices : nextIt->first;
       uint32 numVertices = lastVertex - it->first;
-      it->second = AddBuffer(buffer, main, it->first, numVertices);
+      it->second = main.SaveVertices(
+          buffer.vertexBuffer.data() + it->first * buffer.vertexStride,
+          numVertices, Attributes(buffer.vertexStride), buffer.vertexStride);
     }
   };
 
@@ -491,11 +362,10 @@ void SaveLod(AppContext *ctx, SBM::Header &hdr, size_t lodIndex) {
 
     gltf::Primitive &prim = gMesh.primitives.emplace_back();
     prim.attributes = offsets.at(p.vertexBase);
-
-    IndexProxy iProxy;
-    iProxy.buffer = buffer.indexBuffer.data() + p.indexOffset * 2;
-    iProxy.numIndices = p.numIndices * 3;
-    prim.indices = main.SaveIndices(iProxy);
+    prim.indices =
+        main.SaveIndices(buffer.indexBuffer.data() + p.indexOffset * 2,
+                         p.numIndices * 3)
+            .accessorIndex;
 
     for (auto &m : main.materials) {
       if (m.name == p.materialName) {
@@ -520,8 +390,6 @@ void SaveLod(AppContext *ctx, SBM::Header &hdr, size_t lodIndex) {
     }
   }
 
-  main.extensionsRequired.emplace_back("KHR_mesh_quantization");
-  main.extensionsUsed.emplace_back("KHR_mesh_quantization");
   std::string lodId;
   if (lodIndex > 0) {
     lodId.append("lod" + std::to_string(lodIndex));

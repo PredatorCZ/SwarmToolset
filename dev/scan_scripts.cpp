@@ -59,7 +59,7 @@ void AppFinishContext_() {
       }
     }
 
-    str.seekp(str.tellp() - 2);
+    str.seekp(size_t(str.tellp()) - 2);
     str << "\n);\n";
   }
 }
@@ -135,7 +135,7 @@ void AppFinishContext() {
       }
     }
 
-    str.seekp(str.tellp() - 2);
+    str.seekp(size_t(str.tellp()) - 2);
     str << "\n);\n";
   }
 }

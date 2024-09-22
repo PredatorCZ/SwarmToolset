@@ -1,5 +1,5 @@
 /*  ValidateScripts
-    Copyright(C) 2023 Lukas Cone
+    Copyright(C) 2023-2024 Lukas Cone
 
     This program is free software : you can redistribute it and / or modify
     it under the terms of the GNU General Public License as published by
@@ -102,25 +102,11 @@ std::map<std::string_view, std::set<std::string_view>> IGNORE_CLASSMEMBERS{
      {"Smoke_ParticleType", "Smoke_Min_U", "Smoke_Max_U", "Smoke_Min_V",
       "Smoke_Max_V", "Smoke_Size0", "Smoke_Size1", "Smoke_Life", "Smoke_Rate"}},
     {"ResourceParticleNuclearBlastForce",
-     {"StartTime", "EndTime", "StartVel", "EndVel", "WithDir",
-      "AgainstDir", "dirx", "diry", "dirz"}},
+     {"StartTime", "EndTime", "StartVel", "EndVel", "WithDir", "AgainstDir",
+      "dirx", "diry", "dirz"}},
 };
 
 AppInfo_s *AppInitModule() { return &appInfo; }
-
-struct ReflectorFriend : Reflector {
-  using Reflector::GetReflectedType;
-};
-
-struct ClassInfo {
-  ClassInfo(const reflectorStatic *ref) : refInst(ref, nullptr), pv(refInst) {}
-  operator bool() { return pv.data; }
-  ReflectorFriend &Get() { return reinterpret_cast<ReflectorFriend &>(pv); }
-
-  // private:
-  ReflectedInstance refInst;
-  ReflectorPureWrap pv;
-};
 
 std::map<std::string, size_t> folderScriptSize;
 
@@ -130,8 +116,20 @@ void AppFinishContext() {
   }
 };
 
+struct ReflectedInstanceFriend : ReflectedInstance {
+  void *Instance() { return instance; }
+  const void *Instance() const { return constInstance; }
+  const reflectorStatic *Refl() const { return rfStatic; }
+};
+
+class ReflectorMemberFriend : public ReflectorMember {
+public:
+  ReflectedInstanceFriend Ref() const { return ReflectedInstanceFriend{data}; }
+  operator const ReflType &() const { return Ref().Refl()->types[id]; }
+};
+
 void AppProcessFile(AppContext *ctx) {
-  std::vector<ClassInfo> classes;
+  std::vector<ReflectorPureWrap> classes;
   classes.reserve(50);
   size_t scriptSize = 0;
 
@@ -145,7 +143,7 @@ void AppProcessFile(AppContext *ctx) {
     auto found = reflectorStatic::Registry().find(name);
 
     if (found != reflectorStatic::Registry().end()) {
-      classes.emplace_back(found->second);
+      classes.emplace_back(ReflectedInstance{found->second, nullptr});
       scriptSize += found->second->classSize;
     } else {
       PrintError("Cannot find reflected class: ", name);
@@ -157,11 +155,11 @@ void AppProcessFile(AppContext *ctx) {
       return;
     }
 
-    auto lastClass = classes.back();
+    auto &lastClass = classes.back();
 
-    if (!lastClass) {
+    if (!lastClass.data) {
       if (type == VL_SUBCLASS) {
-        classes.emplace_back(nullptr);
+        classes.emplace_back(ReflectedInstance{nullptr, nullptr});
       }
       return;
     }
@@ -174,62 +172,66 @@ void AppProcessFile(AppContext *ctx) {
       name.remove_suffix(3);
     }
 
-    auto memberType = lastClass.Get().GetReflectedType(name);
+    ReflectorMemberFriend member{lastClass[name]};
 
-    if (!memberType) {
-      auto found = IGNORE_CLASSMEMBERS.find(lastClass.Get().GetClassName());
+    if (!member) {
+      auto found = IGNORE_CLASSMEMBERS.find(lastClass.ClassName());
 
       if ((found == IGNORE_CLASSMEMBERS.end() ||
            !found->second.contains(name)) &&
           !IGNORE_MEMBERS.contains(name)) {
         auto parentClass =
-            classes.size() > 1 ? classes.at(classes.size() - 2) : nullptr;
-        std::string_view parentClassName(
-            parentClass ? parentClass.Get().GetClassName() : "");
+            classes.size() > 1 ? &classes.at(classes.size() - 2) : nullptr;
+        std::string_view parentClassName(parentClass ? parentClass->ClassName()
+                                                     : "");
         PrintError("Member: ", name,
-                   " not found in class: ", lastClass.Get().GetClassName(),
-                   ", ", parentClassName);
+                   " not found in class: ", lastClass.ClassName(), ", ",
+                   parentClassName);
       }
 
       if (type == VL_SUBCLASS) {
-        classes.emplace_back(nullptr);
+        classes.emplace_back(ReflectedInstance{nullptr, nullptr});
       }
       return;
     } else if (index > -1) {
-      if (memberType->type != REFType::Array) {
+      ReflType memberType = member;
+      if (memberType.container != REFContainer::InlineArray) {
         PrintError("Member: ", name, " reflected type is not array.");
-      } else if (index - '0' >= memberType->asArray.numItems) {
+      } else if (index - '0' >= memberType.asArray.numItems) {
         PrintError("Member: ", name, " array index out of range, ", index - '0',
-                   " >= ", memberType->asArray.numItems);
+                   " >= ", memberType.asArray.numItems);
       }
-    } else if (memberType->container == REFContainer::ContainerVectorMap) {
-      classes.emplace_back(nullptr);
+    } else if (ReflType memberType = member;
+               memberType.container == REFContainer::ContainerVectorMap) {
+      classes.emplace_back(ReflectedInstance{nullptr, nullptr});
       return;
     }
 
+    ReflType memberType = member;
+
     if (type == VL_SUBCLASS) {
-      if (memberType->type == REFType::Vector) {
-        classes.emplace_back(nullptr);
+      if (memberType.type == REFType::Vector) {
+        classes.emplace_back(ReflectedInstance{nullptr, nullptr});
         return;
       }
 
-      auto cHash = memberType->asClass.typeHash;
+      auto cHash = memberType.asClass.typeHash;
 
-      if (memberType->type == REFType::Array) {
-        if (memberType->asArray.type != REFType::Class) {
-          classes.emplace_back(nullptr);
+      if (memberType.container == REFContainer::InlineArray) {
+        if (memberType.asArray.type != REFType::Class) {
+          classes.emplace_back(ReflectedInstance{nullptr, nullptr});
           return;
         }
 
-        cHash = memberType->asArray.asClass.typeHash;
+        cHash = memberType.asArray.asClass.typeHash;
       }
 
       auto found = reflectorStatic::Registry().find(JenHash(cHash));
 
       if (found != reflectorStatic::Registry().end()) {
-        classes.emplace_back(found->second);
+        classes.emplace_back(ReflectedInstance{found->second, nullptr});
       } else {
-        classes.emplace_back(nullptr);
+        classes.emplace_back(ReflectedInstance{nullptr, nullptr});
         PrintError("Cannot find reflected sub class for member: ", name);
       }
     }
@@ -254,5 +256,5 @@ void AppProcessFile(AppContext *ctx) {
   folderName.remove_suffix(sizeof("scripts/"));
   folderName.remove_prefix(folderName.find_last_of('/') + 1);
 
- folderScriptSize[std::string(folderName)] += scriptSize;
+  folderScriptSize[std::string(folderName)] += scriptSize;
 }

@@ -115,8 +115,7 @@ struct MakeContext : AppPackContext {
   //<crc, fileIndex>
   std::map<uint32, uint32> fileCrcs;
 
-  MakeContext(std::string baseFile_, const AppPackStats &)
-      : baseFile(std::move(baseFile_)) {}
+  MakeContext(std::string baseFile_) : baseFile(std::move(baseFile_)) {}
 
   void SendFile(std::string_view path_, std::istream &stream) override {
     std::string strPath(path_);
@@ -236,9 +235,9 @@ struct MakeContext : AppPackContext {
 
     {
       BinWritter outRefs(baseFile + ".refs");
-      //outRefs.WriteContainer("Number of duplicates: " +
-      //                       std::to_string(files.size() - fileCrcs.size()));
-      //outRefs.Write('\n');
+      // outRefs.WriteContainer("Number of duplicates: " +
+      //                        std::to_string(files.size() - fileCrcs.size()));
+      // outRefs.Write('\n');
 
       for (auto &f : fileNames) {
         outRefs.WriteContainer(std::to_string(JenkinsHash3_(f)));
@@ -455,12 +454,11 @@ struct MakeContext : AppPackContext {
   }
 };
 
-AppPackContext *AppNewArchive(const std::string &folder,
-                              const AppPackStats &stats) {
+AppPackContext *AppNewArchive(const std::string &folder) {
   auto file = folder;
   while (file.back() == '/') {
     file.pop_back();
   }
 
-  return new MakeContext(std::move(file), stats);
+  return new MakeContext(std::move(file));
 }

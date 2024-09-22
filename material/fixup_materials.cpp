@@ -60,14 +60,14 @@ void AppProcessFile(AppContext *ctx) {
     auto reflected = GetReflectedMaterial(m);
     ReflectorPureWrap refMaterial(reflected);
 
-    const size_t numMembers = refMaterial.GetNumReflectedValues();
+    const size_t numMembers = refMaterial.NumReflectedValues();
     for (size_t i = 0; i < numMembers; i++) {
       std::string_view memberName(
           static_cast<ReflectedInstanceFriend &>(reflected)
               .rfStatic->typeNames[i]);
 
       if (memberName.ends_with("Texture")) {
-        std::string value(refMaterial.GetReflectedValue(i));
+        std::string value(refMaterial[i]);
         std::transform(value.begin(), value.end(), value.begin(),
                        [](char c) -> char {
                          if (c == '/') {
@@ -80,7 +80,7 @@ void AppProcessFile(AppContext *ctx) {
           value.replace(value.size() - 3, 3, "tga");
         }
 
-        refMaterial.SetReflectedValue(i, value);
+        refMaterial[i] = value;
       }
     }
   }
