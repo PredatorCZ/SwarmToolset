@@ -99,3 +99,24 @@ build_target(
   "Scan scripts and fixup reflections"
   START_YEAR
   2023)
+
+project(DumpScripts)
+
+build_target(
+  NAME
+  dump_scripts
+  TYPE
+  ESMODULE
+  VERSION
+  1
+  SOURCES
+  dump_scripts.cpp
+  LINKS
+  libswarm
+  pugixml-interface
+  AUTHOR
+  "Lukas Cone"
+  DESCR
+  "Scan scripts and dump them to xml"
+  START_YEAR
+  2024)
