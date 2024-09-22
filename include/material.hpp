@@ -24,12 +24,10 @@
 struct ReflectedInstance;
 
 struct Material {
-  uint32 unk;
-  std::string meshName;
   std::string materialName;
-  std::string shaderType;
-  std::string shaderName;
-  uint32 unk0;
+  std::string resourceGUID;
+  std::string shaderTypeName;
+  std::string renShaderName;
 
   void ReflectorTag();
   void Read(BinReaderRef rd);
@@ -43,11 +41,14 @@ struct BumpAnisotropic : Material {
   Vector4 ambient;
   Vector4 diffuse;
   Vector4 specular;
-  float unk1[5];
+  float unk1[5]; // unused
   Vector2 albedoUVScale;
   Vector2 normalUVScale;
-  bool masked;
-  uint32 blended;
+  bool alphaTested;
+  bool blended;
+  bool doubleFaced;
+  bool ignoreMipMaps;
+  bool unk;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
@@ -56,8 +57,8 @@ struct BumpAnisotropic : Material {
 struct Glow : Material {
   std::string glowTexture;
   Vector2 glowUVScale;
-  Vector2 glowUVOffset; // ??
-  Vector2 velocity;     // ??
+  Vector2 glowUVOffset; // runtime
+  Vector2 velocity;
   float glowLevel;
   float glowFactor;
   bool blended;
@@ -67,50 +68,56 @@ struct Glow : Material {
   void Write(BinWritterRef wr) const;
 };
 
-struct Unlit : Material {
-  Vector4 ambient;
+struct RenMaterial : Material {
   Vector4 diffuse;
-  uint8 unk1[36];
-  bool generatedShadows;
-  bool translucent;
-  uint8 null0;
-  uint8 unk2[8];
+  Vector4 ambient;
+  Vector4 specular;
+  Vector4 unk1;
+  float unk2;
+  bool generateShadows;
+  bool alphaBlended;
+  bool alphaTested;
+  uint32 srcBlend;
+  uint32 destBlend;
+
+  void Read(BinReaderRef rd);
+  void Write(BinWritterRef wr) const;
+};
+
+struct Unlit : RenMaterial {
   std::string albedoTexture;
   float pulseFrequency;
-  uint8 unk3[8];
-  float velocity[2];
-  uint8 unk4[16];
-  float fogFactor;
-  bool blended;
+  float pulseSeed; // runtime
+  float pulseOffset; // runtime
+  Vector2 velocity;
+  Vector2 textureUVOffset; // runtime
+  Vector2 unk0;
   float fogOutFactor;
+  bool blended;
+  float fogFactor;
   bool vertexAlpha;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
 };
 
-struct BumpSpecular : Material {
-  Vector4 ambient;
-  Vector4 diffuse;
-  Vector4 specular;
-  float unk1[5];
-  bool generatedShadows;
-  bool translucent;
-  bool masked;
-  uint8 unk2[8];
+struct BumpSpecular : RenMaterial {
   std::string alebedoTexture;
   std::string normalTexture;
   Vector2 albedoUVScale;
   Vector2 normalUVScale;
   Vector2 albedoUVOffset;
   Vector2 normalUVOffset;
-  uint32 blended;
+  bool blended;
+  bool doubleFaced;
+  bool ignoreMipMaps;
+  bool unk;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
 };
 
-struct TexBlend : Material {
+struct BumpTexBlend2 : Material {
   std::string alebedo0Texture;
   std::string alebedo1Texture;
   std::string normalTexture;
@@ -129,14 +136,7 @@ struct TexBlend : Material {
   void Write(BinWritterRef wr) const;
 };
 
-struct Overlay : Material {
-  Vector4 ambient;
-  Vector4 diffuse;
-  Vector4 specular;
-  float unk1[5];
-  bool vertexAlpha;
-  uint8 unk2[2];
-  uint32 unk3[2];
+struct Overlay : RenMaterial {
   std::string alebedoTexture;
   std::string normalTexture;
   Vector2 albedoUVScale;
@@ -145,29 +145,28 @@ struct Overlay : Material {
   Vector2 normalUVOffset;
   Vector2 textureVelocity;
   uint32 depthBias;
-  bool isBlended;
-  uint8 data2;
+  bool blended;
+  bool vertexAlpha;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
 };
 
 struct TintDistort : Material {
-  std::string alebedoTexture;
-  std::string normalTexture;
-  Vector2 albedoUVScale;   // ??
-  Vector2 normalUVScale;   // ??
-  Vector2 albedoUVOffset;  // ??
-  Vector2 normalUVOffset;  // ??
-  Vector2 textureVelocity; // ??
-  bool isBlended;
+  std::string tintTexture;
+  std::string distortlTexture;
+  Vector4 ambient;
+  Vector2 velocity;
+  Vector2 textureUVOffset;
+  Vector2 unk;
+  bool blended;
 
   void Read(BinReaderRef rd);
   void Write(BinWritterRef wr) const;
 };
 
 using MaterialVariant = std::variant<BumpAnisotropic, Glow, Unlit, BumpSpecular,
-                                     TexBlend, Overlay, TintDistort>;
+                                     BumpTexBlend2, Overlay, TintDistort>;
 
 void ReadMaterialVariant(BinReaderRef rd, MaterialVariant &mtr);
 

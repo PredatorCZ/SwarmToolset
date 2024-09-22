@@ -21,44 +21,47 @@
 #include "spike/reflect/reflector.hpp"
 #include <map>
 
+enum class ShaderType {
+  Phong,
+  BumpTexBlend2,
+  Anisotropic,
+  Unlit,
+  Glow,
+  TintDistort,
+  Overlay,
+};
+
 template <class C> MaterialVariant ReadMaterial(BinReaderRef rd) {
   C mtl;
   rd.Read(mtl);
   return mtl;
 }
 
-std::map<std::string_view, MaterialVariant (*)(BinReaderRef)> MTLREAD{
-    {"BumpAnisotropic", ReadMaterial<BumpAnisotropic>},
-    {"Glow", ReadMaterial<Glow>},
-    {"Unlit", ReadMaterial<Unlit>},
-    {"BumpSpecular", ReadMaterial<BumpSpecular>},
-    {"TexBlend", ReadMaterial<TexBlend>},
-    {"Overlay", ReadMaterial<Overlay>},
-    {"TintDistort", ReadMaterial<TintDistort>},
+std::map<ShaderType, MaterialVariant (*)(BinReaderRef)> MTLREAD{
+    {ShaderType::Anisotropic, ReadMaterial<BumpAnisotropic>},
+    {ShaderType::Glow, ReadMaterial<Glow>},
+    {ShaderType::Unlit, ReadMaterial<Unlit>},
+    {ShaderType::Phong, ReadMaterial<BumpSpecular>},
+    {ShaderType::BumpTexBlend2, ReadMaterial<BumpTexBlend2>},
+    {ShaderType::Overlay, ReadMaterial<Overlay>},
+    {ShaderType::TintDistort, ReadMaterial<TintDistort>},
 
 };
 
 void ReadMaterialVariant(BinReaderRef rd, MaterialVariant &mtr) {
-  Material base;
-  rd.Push();
-  rd.Read(base);
-  rd.Pop();
-  std::string_view shaderName(base.shaderType);
+  ShaderType shaderType;
+  rd.Read(shaderType);
 
-  if (shaderName.ends_with("_Blended")) {
-    shaderName.remove_suffix(8);
-  }
-
-  mtr = MTLREAD.at(shaderName)(rd);
+  mtr = MTLREAD.at(shaderType)(rd);
 }
 
 void Material::Read(BinReaderRef rd) {
-  rd.Read(unk);
-  rd.ReadString(meshName);
   rd.ReadString(materialName);
-  rd.ReadString(shaderType);
-  rd.ReadString(shaderName);
-  rd.Read(unk0);
+  rd.ReadString(resourceGUID);
+  rd.ReadString(shaderTypeName);
+  rd.ReadString(renShaderName);
+  uint32 constValue;
+  rd.Read(constValue); // always 5
 }
 
 void BumpAnisotropic::Read(BinReaderRef rd) {
@@ -72,8 +75,11 @@ void BumpAnisotropic::Read(BinReaderRef rd) {
   rd.Read(unk1);
   rd.Read(albedoUVScale);
   rd.Read(normalUVScale);
-  rd.Read(masked);
+  rd.Read(alphaTested);
   rd.Read(blended);
+  rd.Read(doubleFaced);
+  rd.Read(ignoreMipMaps);
+  rd.Read(unk);
 }
 
 void Glow::Read(BinReaderRef rd) {
@@ -88,36 +94,37 @@ void Glow::Read(BinReaderRef rd) {
   rd.Read(fogFactor);
 }
 
-void Unlit::Read(BinReaderRef rd) {
+void RenMaterial::Read(BinReaderRef rd) {
   Material::Read(rd);
-  rd.Read(ambient);
   rd.Read(diffuse);
+  rd.Read(ambient);
+  rd.Read(specular);
   rd.Read(unk1);
-  rd.Read(generatedShadows);
-  rd.Read(translucent);
-  rd.Read(null0);
   rd.Read(unk2);
+  rd.Read(generateShadows);
+  rd.Read(alphaBlended);
+  rd.Read(alphaTested);
+  rd.Read(srcBlend);
+  rd.Read(destBlend);
+}
+
+void Unlit::Read(BinReaderRef rd) {
+  RenMaterial::Read(rd);
   rd.ReadString(albedoTexture);
   rd.Read(pulseFrequency);
-  rd.Read(unk3);
+  rd.Read(pulseSeed);
+  rd.Read(pulseOffset);
   rd.Read(velocity);
-  rd.Read(unk4);
-  rd.Read(fogFactor);
-  rd.Read(blended);
+  rd.Read(textureUVOffset);
+  rd.Read(unk0);
   rd.Read(fogOutFactor);
+  rd.Read(blended);
+  rd.Read(fogFactor);
   rd.Read(vertexAlpha);
 }
 
 void BumpSpecular::Read(BinReaderRef rd) {
-  Material::Read(rd);
-  rd.Read(ambient);
-  rd.Read(diffuse);
-  rd.Read(specular);
-  rd.Read(unk1);
-  rd.Read(generatedShadows);
-  rd.Read(translucent);
-  rd.Read(masked);
-  rd.Read(unk2);
+  RenMaterial::Read(rd);
   rd.ReadString(alebedoTexture);
   rd.ReadString(normalTexture);
   rd.Read(albedoUVScale);
@@ -125,9 +132,12 @@ void BumpSpecular::Read(BinReaderRef rd) {
   rd.Read(albedoUVOffset);
   rd.Read(normalUVOffset);
   rd.Read(blended);
+  rd.Read(doubleFaced);
+  rd.Read(ignoreMipMaps);
+  rd.Read(unk);
 }
 
-void TexBlend::Read(BinReaderRef rd) {
+void BumpTexBlend2::Read(BinReaderRef rd) {
   Material::Read(rd);
   rd.ReadString(alebedo0Texture);
   rd.ReadString(alebedo1Texture);
@@ -145,14 +155,7 @@ void TexBlend::Read(BinReaderRef rd) {
 }
 
 void Overlay::Read(BinReaderRef rd) {
-  Material::Read(rd);
-  rd.Read(ambient);
-  rd.Read(diffuse);
-  rd.Read(specular);
-  rd.Read(unk1);
-  rd.Read(vertexAlpha);
-  rd.Read(unk2);
-  rd.Read(unk3);
+  RenMaterial::Read(rd);
   rd.ReadString(alebedoTexture);
   rd.ReadString(normalTexture);
   rd.Read(albedoUVScale);
@@ -161,32 +164,31 @@ void Overlay::Read(BinReaderRef rd) {
   rd.Read(normalUVOffset);
   rd.Read(textureVelocity);
   rd.Read(depthBias);
-  rd.Read(isBlended);
-  rd.Read(data2);
+  rd.Read(blended);
+  rd.Read(vertexAlpha);
 }
 
 void TintDistort::Read(BinReaderRef rd) {
   Material::Read(rd);
-  rd.ReadString(alebedoTexture);
-  rd.ReadString(normalTexture);
-  rd.Read(albedoUVScale);
-  rd.Read(normalUVScale);
-  rd.Read(albedoUVOffset);
-  rd.Read(normalUVOffset);
-  rd.Read(textureVelocity);
-  rd.Read(isBlended);
+  rd.ReadString(tintTexture);
+  rd.ReadString(distortlTexture);
+  rd.Read(ambient);
+  rd.Read(velocity);
+  rd.Read(textureUVOffset);
+  rd.Read(unk);
+  rd.Read(blended);
 }
 
 void Material::Write(BinWritterRef rd) const {
-  rd.Write(unk);
-  rd.WriteT(meshName);
   rd.WriteT(materialName);
-  rd.WriteT(shaderType);
-  rd.WriteT(shaderName);
-  rd.Write(unk0);
+  rd.WriteT(resourceGUID);
+  rd.WriteT(shaderTypeName);
+  rd.WriteT(renShaderName);
+  rd.Write(5);
 }
 
 void BumpAnisotropic::Write(BinWritterRef rd) const {
+  rd.Write(ShaderType::Anisotropic);
   Material::Write(rd);
   rd.WriteT(alebedoTexture);
   rd.WriteT(normalTexture);
@@ -197,11 +199,15 @@ void BumpAnisotropic::Write(BinWritterRef rd) const {
   rd.Write(unk1);
   rd.Write(albedoUVScale);
   rd.Write(normalUVScale);
-  rd.Write(masked);
+  rd.Write(alphaTested);
   rd.Write(blended);
+  rd.Write(doubleFaced);
+  rd.Write(ignoreMipMaps);
+  rd.Write(unk);
 }
 
 void Glow::Write(BinWritterRef rd) const {
+  rd.Write(ShaderType::Glow);
   Material::Write(rd);
   rd.WriteT(glowTexture);
   rd.Write(glowUVScale);
@@ -213,36 +219,39 @@ void Glow::Write(BinWritterRef rd) const {
   rd.Write(fogFactor);
 }
 
-void Unlit::Write(BinWritterRef rd) const {
+void RenMaterial::Write(BinWritterRef rd) const {
   Material::Write(rd);
-  rd.Write(ambient);
   rd.Write(diffuse);
+  rd.Write(ambient);
+  rd.Write(specular);
   rd.Write(unk1);
-  rd.Write(generatedShadows);
-  rd.Write(translucent);
-  rd.Write(null0);
   rd.Write(unk2);
+  rd.Write(generateShadows);
+  rd.Write(alphaBlended);
+  rd.Write(alphaTested);
+  rd.Write(srcBlend);
+  rd.Write(destBlend);
+}
+
+void Unlit::Write(BinWritterRef rd) const {
+  rd.Write(ShaderType::Unlit);
+  RenMaterial::Write(rd);
   rd.WriteT(albedoTexture);
   rd.Write(pulseFrequency);
-  rd.Write(unk3);
+  rd.Write(pulseSeed);
+  rd.Write(pulseOffset);
   rd.Write(velocity);
-  rd.Write(unk4);
-  rd.Write(fogFactor);
-  rd.Write(blended);
+  rd.Write(textureUVOffset);
+  rd.Write(unk0);
   rd.Write(fogOutFactor);
+  rd.Write(blended);
+  rd.Write(fogFactor);
   rd.Write(vertexAlpha);
 }
 
 void BumpSpecular::Write(BinWritterRef rd) const {
-  Material::Write(rd);
-  rd.Write(ambient);
-  rd.Write(diffuse);
-  rd.Write(specular);
-  rd.Write(unk1);
-  rd.Write(generatedShadows);
-  rd.Write(translucent);
-  rd.Write(masked);
-  rd.Write(unk2);
+  rd.Write(ShaderType::Phong);
+  RenMaterial::Write(rd);
   rd.WriteT(alebedoTexture);
   rd.WriteT(normalTexture);
   rd.Write(albedoUVScale);
@@ -250,9 +259,13 @@ void BumpSpecular::Write(BinWritterRef rd) const {
   rd.Write(albedoUVOffset);
   rd.Write(normalUVOffset);
   rd.Write(blended);
+  rd.Write(doubleFaced);
+  rd.Write(ignoreMipMaps);
+  rd.Write(unk);
 }
 
-void TexBlend::Write(BinWritterRef rd) const {
+void BumpTexBlend2::Write(BinWritterRef rd) const {
+  rd.Write(ShaderType::BumpTexBlend2);
   Material::Write(rd);
   rd.WriteT(alebedo0Texture);
   rd.WriteT(alebedo1Texture);
@@ -270,14 +283,8 @@ void TexBlend::Write(BinWritterRef rd) const {
 }
 
 void Overlay::Write(BinWritterRef rd) const {
-  Material::Write(rd);
-  rd.Write(ambient);
-  rd.Write(diffuse);
-  rd.Write(specular);
-  rd.Write(unk1);
-  rd.Write(vertexAlpha);
-  rd.Write(unk2);
-  rd.Write(unk3);
+  rd.Write(ShaderType::Overlay);
+  RenMaterial::Write(rd);
   rd.WriteT(alebedoTexture);
   rd.WriteT(normalTexture);
   rd.Write(albedoUVScale);
@@ -286,62 +293,65 @@ void Overlay::Write(BinWritterRef rd) const {
   rd.Write(normalUVOffset);
   rd.Write(textureVelocity);
   rd.Write(depthBias);
-  rd.Write(isBlended);
-  rd.Write(data2);
+  rd.Write(blended);
+  rd.Write(vertexAlpha);
 }
 
 void TintDistort::Write(BinWritterRef rd) const {
+  rd.Write(ShaderType::TintDistort);
   Material::Write(rd);
-  rd.WriteT(alebedoTexture);
-  rd.WriteT(normalTexture);
-  rd.Write(albedoUVScale);
-  rd.Write(normalUVScale);
-  rd.Write(albedoUVOffset);
-  rd.Write(normalUVOffset);
-  rd.Write(textureVelocity);
-  rd.Write(isBlended);
+  rd.WriteT(tintTexture);
+  rd.WriteT(distortlTexture);
+  rd.Write(ambient);
+  rd.Write(velocity);
+  rd.Write(textureUVOffset);
+  rd.Write(unk);
+  rd.Write(blended);
 }
 
-REFLECT(CLASS(Material), MEMBER(unk), MEMBER(meshName), MEMBER(materialName),
-        MEMBER(shaderType), MEMBER(shaderName), MEMBER(unk0))
+REFLECT(CLASS(Material), MEMBER(materialName), MEMBER(resourceGUID),
+        MEMBER(shaderTypeName), MEMBER(renShaderName))
 
-REFLECT(BASEDCLASS(Material, BumpAnisotropic), MEMBER(alebedoTexture), MEMBER(normalTexture),
-        MEMBER(anisotropyTexture), MEMBER(ambient), MEMBER(diffuse),
-        MEMBER(specular), MEMBER(unk1), MEMBER(albedoUVScale),
-        MEMBER(normalUVScale), MEMBER(masked), MEMBER(blended))
+REFLECT(BASEDCLASS(Material, RenMaterial), MEMBER(diffuse), MEMBER(ambient),
+        MEMBER(specular), MEMBER(unk1), MEMBER(unk2), MEMBER(generateShadows),
+        MEMBER(alphaBlended), MEMBER(alphaTested), MEMBER(srcBlend),
+        MEMBER(destBlend));
+
+REFLECT(BASEDCLASS(Material, BumpAnisotropic), MEMBER(alebedoTexture),
+        MEMBER(normalTexture), MEMBER(anisotropyTexture), MEMBER(ambient),
+        MEMBER(diffuse), MEMBER(specular), MEMBER(unk1), MEMBER(albedoUVScale),
+        MEMBER(normalUVScale), MEMBER(alphaTested), MEMBER(blended),
+        MEMBER(doubleFaced), MEMBER(ignoreMipMaps), MEMBER(unk))
 
 REFLECT(BASEDCLASS(Material, Glow), MEMBER(glowTexture), MEMBER(glowUVScale),
         MEMBER(glowUVOffset), MEMBER(velocity), MEMBER(glowLevel),
         MEMBER(glowFactor), MEMBER(blended), MEMBER(fogFactor))
 
-REFLECT(BASEDCLASS(Material, Unlit), MEMBER(ambient), MEMBER(diffuse), MEMBER(unk1),
-        MEMBER(generatedShadows), MEMBER(translucent), MEMBER(null0),
-        MEMBER(unk2), MEMBER(albedoTexture), MEMBER(pulseFrequency),
-        MEMBER(unk3), MEMBER(velocity), MEMBER(unk4), MEMBER(fogFactor),
-        MEMBER(blended), MEMBER(fogOutFactor), MEMBER(vertexAlpha))
+REFLECT(BASEDCLASS(RenMaterial, Unlit), MEMBER(albedoTexture),
+        MEMBER(pulseFrequency), MEMBER(pulseSeed), MEMBER(pulseOffset),
+        MEMBER(velocity), MEMBER(textureUVOffset), MEMBER(unk0),
+        MEMBER(fogOutFactor), MEMBER(blended), MEMBER(fogFactor),
+        MEMBER(vertexAlpha))
 
-REFLECT(BASEDCLASS(Material, BumpSpecular), MEMBER(ambient), MEMBER(diffuse), MEMBER(specular),
-        MEMBER(unk1), MEMBER(generatedShadows), MEMBER(translucent),
-        MEMBER(masked), MEMBER(unk2), MEMBER(alebedoTexture),
+REFLECT(BASEDCLASS(RenMaterial, BumpSpecular), MEMBER(alebedoTexture),
         MEMBER(normalTexture), MEMBER(albedoUVScale), MEMBER(normalUVScale),
-        MEMBER(albedoUVOffset), MEMBER(normalUVOffset), MEMBER(blended))
+        MEMBER(albedoUVOffset), MEMBER(normalUVOffset), MEMBER(blended),
+        MEMBER(doubleFaced), MEMBER(ignoreMipMaps), MEMBER(unk))
 
-REFLECT(BASEDCLASS(Material, TexBlend), MEMBER(alebedo0Texture), MEMBER(alebedo1Texture),
-        MEMBER(normalTexture), MEMBER(ambient), MEMBER(diffuse),
-        MEMBER(specular), MEMBER(unk1), MEMBER(texture1Scale),
+REFLECT(BASEDCLASS(Material, BumpTexBlend2), MEMBER(alebedo0Texture),
+        MEMBER(alebedo1Texture), MEMBER(normalTexture), MEMBER(ambient),
+        MEMBER(diffuse), MEMBER(specular), MEMBER(unk1), MEMBER(texture1Scale),
         MEMBER(texture2Scale), MEMBER(texture3Scale), MEMBER(unk2),
         MEMBER(applyNormalTo1stTextureOnly), MEMBER(unk3))
 
-REFLECT(BASEDCLASS(Material, Overlay), MEMBER(ambient), MEMBER(diffuse), MEMBER(specular),
-        MEMBER(unk1), MEMBER(vertexAlpha), MEMBER(unk2), MEMBER(unk3),
-        MEMBER(alebedoTexture), MEMBER(normalTexture), MEMBER(albedoUVScale),
-        MEMBER(normalUVScale), MEMBER(albedoUVOffset), MEMBER(normalUVOffset),
-        MEMBER(textureVelocity), MEMBER(depthBias), MEMBER(isBlended),
-        MEMBER(data2))
+REFLECT(BASEDCLASS(RenMaterial, Overlay), MEMBER(alebedoTexture),
+        MEMBER(normalTexture), MEMBER(albedoUVScale), MEMBER(normalUVScale),
+        MEMBER(albedoUVOffset), MEMBER(normalUVOffset), MEMBER(textureVelocity),
+        MEMBER(depthBias), MEMBER(blended), MEMBER(vertexAlpha))
 
-REFLECT(BASEDCLASS(Material, TintDistort), MEMBER(alebedoTexture), MEMBER(normalTexture),
-        MEMBER(albedoUVScale), MEMBER(normalUVScale), MEMBER(albedoUVOffset),
-        MEMBER(normalUVOffset), MEMBER(textureVelocity), MEMBER(isBlended))
+REFLECT(BASEDCLASS(Material, TintDistort), MEMBER(tintTexture),
+        MEMBER(distortlTexture), MEMBER(ambient), MEMBER(velocity),
+        MEMBER(textureUVOffset), MEMBER(unk), MEMBER(blended))
 
 ReflectedInstance GetReflectedMaterial(MaterialVariant &mtr) {
   return std::visit(
