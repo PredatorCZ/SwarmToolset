@@ -483,3 +483,5 @@ struct ResourceObjectSFXWarriorRoyalX : ResourcePack {
   ResourceRef materialRicochet;
   ResourceRef materialDeathBone;
 };
+
+struct ResourceOverrider : ResourcePack {};
