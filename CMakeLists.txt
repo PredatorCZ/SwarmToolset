@@ -35,6 +35,10 @@ target_link_libraries(stcache spike-interface)
 target_include_directories(stcache PUBLIC include PRIVATE ${TPD_PATH}/zstd/lib/common ${TPD_PATH}/zstd/lib)
 set_target_properties(stcache PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
+add_subdirectory(${TPD_PATH}/veverka)
+add_subdirectory(${TPD_PATH}/imgui)
+add_subdirectory(script_editor)
+
 add_spike_subdir(slack)
 add_spike_subdir(material)
 add_spike_subdir(terrain)
