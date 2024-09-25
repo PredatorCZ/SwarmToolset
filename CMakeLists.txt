@@ -32,7 +32,7 @@ file(GLOB_RECURSE ZSTD_SOURCE_FILES "${TPD_PATH}/zstd/lib/*.c")
 
 add_library(stcache OBJECT src/stcache.cpp ${ZSTD_SOURCE_FILES} ${TPD_PATH}/zstd/lib/decompress/huf_decompress_amd64.S)
 target_link_libraries(stcache spike-interface)
-target_include_directories(stcache PUBLIC include PRIVATE ${TPD_PATH}/zstd/lib/common ${TPD_PATH}/zstd/lib)
+target_include_directories(stcache PUBLIC include ${TPD_PATH}/zstd/lib/common ${TPD_PATH}/zstd/lib)
 set_target_properties(stcache PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 add_subdirectory(${TPD_PATH}/veverka)
@@ -52,4 +52,4 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Release)
   add_spike_subdir(dev)
 endif()
 
-add_subdirectory(launcher)
+#add_subdirectory(launcher)

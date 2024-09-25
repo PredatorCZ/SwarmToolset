@@ -97,11 +97,15 @@ void WarmColors() {
   colors[ImGuiCol_ModalWindowDimBg] = ImVec4(0.80f, 0.80f, 0.80f, 0.35f);
 }
 
+std::vector<std::string> output;
+
 void printfunc(HSQUIRRELVM SQ_UNUSED_ARG(v), const SQChar *s, ...) {
   va_list vl;
+  char buffer[0x1000]{};
   va_start(vl, s);
-  vfprintf(stdout, s, vl);
+  vsprintf(buffer, s, vl);
   va_end(vl);
+  output.emplace_back(buffer);
 }
 
 struct CallInfo {
@@ -321,7 +325,6 @@ struct DocumentEdit {
   const char *name;
   bool active = false;
   bool opened = false;
-  bool unsaved = false;
   ImGuiTabItemFlags tabFlags = 0;
 };
 
@@ -336,17 +339,19 @@ DocumentEdit &Document(const char *name) {
     found = docNameToDoc.emplace(name, documents.size()).first;
     DocumentEdit &newDoc = documents.emplace_back();
     newDoc.name = found->first.c_str();
+    newDoc.editor.SetLanguageDefinition(langDef);
   }
 
   return documents.at(found->second);
 }
 
 void DebugHook(HSQUIRRELVM v, SQInteger /*type*/, const SQChar *sourcename,
-               SQInteger line, const SQChar * funcname) {
+               SQInteger line, const SQChar *funcname) {
   // printf("%c %s %lli %s\n", (char)type, sourcename, line, funcname);
 
   if (Document(sourcename).editor.GetBreakpoints().contains(line) ||
-      debugState == DebugTriggerType::StepInto || (debugState == DebugTriggerType::StepOver && brokeFunction == funcname)) {
+      debugState == DebugTriggerType::StepInto ||
+      (debugState == DebugTriggerType::StepOver && brokeFunction == funcname)) {
     brokeSource = sourcename;
     brokeFunction = funcname;
     Document(sourcename).editor.SetCurrentBreakPoint(line);
@@ -370,10 +375,6 @@ void DebugHook(HSQUIRRELVM v, SQInteger /*type*/, const SQChar *sourcename,
 void sq_compile(HSQUIRRELVM v, std::stringstream text, const char *fileName) {
   auto readChar = [](SQUserPointer iobuf) -> SQInteger {
     std::stringstream *str = static_cast<std::stringstream *>(iobuf);
-#define READ                                                                   \
-  if (str->read(reinterpret_cast<char *>(&inchar), 1); str->eof())             \
-    return 0;
-
     static const SQInteger utf8_lengths[16] = {
         1, 1, 1, 1, 1, 1, 1, 1, /* 0000 to 0111 : 1 byte (plain ASCII) */
         0, 0, 0, 0,             /* 1000 to 1011 : not valid */
@@ -384,25 +385,29 @@ void sq_compile(HSQUIRRELVM v, std::stringstream text, const char *fileName) {
     static const unsigned char byte_masks[5] = {0, 0, 0x1f, 0x0f, 0x07};
     unsigned char inchar;
     SQInteger c = 0;
-    READ;
+    if (str->read(reinterpret_cast<char *>(&inchar), 1); str->eof()) {
+      return 0;
+    }
     c = inchar;
     //
     if (c >= 0x80) {
       SQInteger tmp;
       SQInteger codelen = utf8_lengths[c >> 4];
-      if (codelen == 0)
+      if (codelen == 0) {
         return 0;
+      }
       //"invalid UTF-8 stream";
       tmp = c & byte_masks[codelen];
       for (SQInteger n = 0; n < codelen - 1; n++) {
         tmp <<= 6;
-        READ;
+        if (str->read(reinterpret_cast<char *>(&inchar), 1); str->eof()) {
+          return 0;
+        }
         tmp |= inchar & 0x3F;
       }
       c = tmp;
     }
     return c;
-#undef READ
   };
 
   sq_compile(v, readChar, &text, fileName, SQTrue);
@@ -410,14 +415,85 @@ void sq_compile(HSQUIRRELVM v, std::stringstream text, const char *fileName) {
 
 void RenderDocuments(HSQUIRRELVM v) {
   for (auto &d : documents) {
-    if (!d.opened) {
+    if (d.active && !d.opened) {
+      std::string bakName = d.name;
+      bakName.append(".bak");
+      std::ifstream t(bakName);
+      if (t.fail()) {
+        t.open(d.name);
+      }
+      if (t.good()) {
+        std::string str((std::istreambuf_iterator<char>(t)),
+                        std::istreambuf_iterator<char>());
+        d.editor.SetText(str);
+        d.opened = true;
+      }
+    }
+
+    auto Save = [&] {
+      std::string newName1 = d.name;
+      newName1.append(".old1");
+      std::string newName2 = d.name;
+      newName2.append(".old2");
+      remove(newName2.c_str());
+      rename(newName1.c_str(), newName2.c_str());
+      rename(d.name, newName1.c_str());
+      std::ofstream str(d.name);
+
+      if (str.good()) {
+        std::string text = d.editor.GetText();
+        str << text;
+
+        std::string bakName = d.name;
+        bakName.append(".bak");
+        remove(bakName.c_str());
+      }
+
+      d.tabFlags ^= ImGuiTabItemFlags_UnsavedDocument;
+    };
+
+    if (!ImGui::BeginTabItem(d.name, &d.active, d.tabFlags)) {
+      if (d.tabFlags & ImGuiTabItemFlags_UnsavedDocument) {
+        ImGui::OpenPopup("Unsaved document");
+        ImVec2 center = ImGui::GetMainViewport()->GetCenter();
+        ImGui::SetNextWindowPos(center, ImGuiCond_Appearing,
+                                ImVec2(0.5f, 0.5f));
+        if (ImGui::BeginPopupModal("Unsaved document", NULL,
+                                   ImGuiWindowFlags_AlwaysAutoResize)) {
+          ImGui::Text("Document %s hasn't been saved", d.name);
+          ImGui::Separator();
+
+          if (ImGui::Button("Save", ImVec2(120, 0))) {
+            Save();
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::SetItemDefaultFocus();
+          ImGui::SameLine();
+          if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
+            d.tabFlags ^= ImGuiTabItemFlags_UnsavedDocument;
+            ImGui::CloseCurrentPopup();
+          }
+          ImGui::SameLine();
+          if (ImGui::Button("Cancel", ImVec2(120, 0))) {
+            ImGui::CloseCurrentPopup();
+            d.active = true;
+          }
+          ImGui::EndPopup();
+        }
+      }
+
       continue;
     }
 
-    ImGui::BeginTabItem(d.name, &d.active, d.tabFlags);
-
     if (d.lastTimeTextChanged + 1 <= ImGui::GetTime()) {
-      sq_compile(v, std::stringstream(d.editor.GetText()), d.name);
+      std::string text = d.editor.GetText();
+      std::string bakName = d.name;
+      bakName.append(".bak");
+      std::ofstream str(bakName);
+      if (str.good()) {
+        str << text;
+      }
+      sq_compile(v, std::stringstream(std::move(text)), d.name);
       d.lastTimeTextChanged = std::numeric_limits<double>().infinity();
       auto newErrors = std::move(d.errors);
       d.editor.SetErrorMarkers(newErrors);
@@ -426,6 +502,13 @@ void RenderDocuments(HSQUIRRELVM v) {
     if (d.editor.IsTextChanged()) {
       d.lastTimeTextChanged = ImGui::GetTime();
       d.tabFlags = ImGuiTabItemFlags_UnsavedDocument;
+    }
+
+    ImGuiIO &io = ImGui::GetIO();
+    bool ctrl = io.ConfigMacOSXBehaviors ? io.KeySuper : io.KeyCtrl;
+    if ((d.tabFlags & ImGuiTabItemFlags_UnsavedDocument) && ctrl &&
+        ImGui::IsKeyPressed(ImGuiKey_S)) {
+      Save();
     }
     ImGui::EndTabItem();
   }
@@ -459,9 +542,9 @@ int main(int, char *argv[]) {
   }
 
   glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-  GLFWwindow *sharedWindow = glfwCreateWindow(1, 1, "", nullptr, window);
+  GLFWwindow *previewWnd =
+      glfwCreateWindow(width, height, "Preview", nullptr, window);
 
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -476,25 +559,17 @@ int main(int, char *argv[]) {
     return 2;
   }
 
-  ImGui::CreateContext();
+  ImGuiContext *mainCtx = ImGui::CreateContext();
   WarmColors();
+  ImGui_ImplGlfw_InitForOpenGL(window, true);
+  ImGui_ImplOpenGL3_Init();
+  ImGuiContext *previewCtx = ImGui::CreateContext();
+  ImGui::SetCurrentContext(previewCtx);
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL3_Init();
 
   static const char *fileToEdit = "methcall.nut";
-
-  {
-    std::ifstream t(fileToEdit);
-    if (t.good()) {
-      std::string str((std::istreambuf_iterator<char>(t)),
-                      std::istreambuf_iterator<char>());
-      DocumentEdit &doc = Document(fileToEdit);
-      doc.editor.SetText(str);
-      doc.opened = true;
-      doc.active = true;
-      doc.editor.SetLanguageDefinition(langDef);
-    }
-  }
+  Document(fileToEdit).active = true;
 
   HSQUIRRELVM v = sq_open(1024);
   sq_setprintfunc(v, printfunc, printfunc);
@@ -513,6 +588,7 @@ int main(int, char *argv[]) {
 
   std::condition_variable callRequested;
   SQInteger numParams = 1;
+  bool debugging = false;
 
   std::jthread debugLoop([&](std::stop_token tok) {
     std::mutex callMutex;
@@ -523,8 +599,9 @@ int main(int, char *argv[]) {
       if (tok.stop_requested()) {
         return;
       }
-
+      debugging = true;
       sq_call(v, numParams, SQFalse, SQTrue);
+      debugging = false;
     }
   });
 
@@ -534,8 +611,10 @@ int main(int, char *argv[]) {
   };
 
   while (!glfwWindowShouldClose(window)) {
+    glfwMakeContextCurrent(window);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
+    ImGui::SetCurrentContext(mainCtx);
 
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
@@ -552,18 +631,20 @@ int main(int, char *argv[]) {
         ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoBringToFrontOnFocus |
         ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
     ImGui::Begin("main workspace", nullptr, windowFlags);
-    ImGui::BeginChild("left space", ImVec2(150, 0),
+    ImGui::BeginChild("left space", ImVec2(200, 0),
                       ImGuiChildFlags_ResizeX | ImGuiChildFlags_Border);
     ImGui::BeginTabBar("left tabspace");
 
     if (ImGui::BeginTabItem("Debug")) {
-
+      ImGui::BeginDisabled(debugging);
       if (ImGui::Button("Start")) {
         sq_pushroottable(v);
         sq_debug_call(1);
       }
+      ImGui::EndDisabled();
 
       ImGui::SameLine();
+      ImGui::BeginDisabled(!debugging);
 
       if (ImGui::Button("Continue")) {
         debugState = DebugTriggerType::Continue;
@@ -590,6 +671,8 @@ int main(int, char *argv[]) {
         debugState = DebugTriggerType::Stop;
         debugBreak.notify_all();
       }
+
+      ImGui::EndDisabled();
 
       if (ImGui::CollapsingHeader("Local Variables",
                                   ImGuiTreeNodeFlags_DefaultOpen) &&
@@ -619,7 +702,7 @@ int main(int, char *argv[]) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::BeginChild("right space");
     ImGui::PopStyleVar();
-    ImGui::BeginChild("editor space", ImVec2(0, 0),
+    ImGui::BeginChild("editor space", ImVec2(0, height * 0.8),
                       ImGuiChildFlags_ResizeY | ImGuiChildFlags_Border);
     ImGui::BeginTabBar("right tabspace");
     RenderDocuments(v);
@@ -627,6 +710,15 @@ int main(int, char *argv[]) {
     ImGui::EndChild();
 
     ImGui::BeginChild("output", ImVec2(0, 0), ImGuiChildFlags_Border);
+
+    if (ImGui::BeginTable("output table", 1)) {
+      for (auto &o : output) {
+        ImGui::TableNextRow();
+        ImGui::TableSetColumnIndex(0);
+        ImGui::TextUnformatted(o.data(), o.data() + o.size());
+      }
+      ImGui::EndTable();
+    }
 
     ImGui::EndChild();
     ImGui::EndChild();
@@ -637,14 +729,35 @@ int main(int, char *argv[]) {
 
     glfwSwapBuffers(window);
     glfwPollEvents();
+
+    glfwMakeContextCurrent(previewWnd);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui::SetCurrentContext(previewCtx);
+
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Button("Press me");
+
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    glfwSwapBuffers(previewWnd);
   }
 
+  ImGui::SetCurrentContext(mainCtx);
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
+  ImGui::SetCurrentContext(previewCtx);
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  ImGui::DestroyContext(mainCtx);
+  ImGui::DestroyContext(previewCtx);
 
   glfwDestroyWindow(window);
-  glfwDestroyWindow(sharedWindow);
+  glfwDestroyWindow(previewWnd);
   glfwTerminate();
   debugLoop.request_stop();
   callRequested.notify_all();
