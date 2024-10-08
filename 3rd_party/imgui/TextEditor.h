@@ -126,6 +126,14 @@ public:
 		std::string mDeclaration;
 	};
 
+	struct IndentifierAt
+	{
+		std::string lName;
+		std::string mName;
+		std::string rName;
+		bool isFunc = false;
+	};
+
 	typedef std::string String;
 	typedef std::unordered_map<std::string, Identifier> Identifiers;
 	typedef std::unordered_set<std::string> Keywords;
@@ -154,6 +162,7 @@ public:
 		typedef std::pair<std::string, PaletteIndex> TokenRegexString;
 		typedef std::vector<TokenRegexString> TokenRegexStrings;
 		typedef bool(*TokenizeCallback)(const char * in_begin, const char * in_end, const char *& out_begin, const char *& out_end, PaletteIndex & paletteIndex);
+		typedef void(*IdentifierCallback)(const IndentifierAt &identifier);
 
 		std::string mName;
 		Keywords mKeywords;
@@ -168,6 +177,8 @@ public:
 		TokenRegexStrings mTokenRegexStrings;
 
 		bool mCaseSensitive=true;
+
+		IdentifierCallback mIdentifier=nullptr;
 
 		static const LanguageDefinition& CPlusPlus();
 		static const LanguageDefinition& HLSL();
@@ -327,6 +338,7 @@ private:
 	Coordinates FindWordStart(const Coordinates& aFrom) const;
 	Coordinates FindWordEnd(const Coordinates& aFrom) const;
 	Coordinates FindNextWord(const Coordinates& aFrom) const;
+	Coordinates FindPrevWord(const Coordinates& aFrom) const;
 	int GetCharacterIndex(const Coordinates& aCoordinates) const;
 	int GetCharacterColumn(int aLine, int aIndex) const;
 	int GetLineCharacterCount(int aLine) const;
@@ -340,6 +352,7 @@ private:
 	void DeleteSelection();
 	std::string GetWordUnderCursor() const;
 	std::string GetWordAt(const Coordinates& aCoords) const;
+	IndentifierAt GetIdentifierAt(const Coordinates& aCoords) const;
 	ImU32 GetGlyphColor(const Glyph& aGlyph) const;
 
 	void HandleKeyboardInputs();

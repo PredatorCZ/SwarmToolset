@@ -1,0 +1,534 @@
+<body>
+    <div>
+        <h1>array</h1>
+        <p>Creates a new array.</p>
+        <p><code class="arg">size</code>: Size of a new array.</p>
+        <p><code class="optarg">fill</code>: Value to fill new array's slots. If ommited, <code>null</code> is used.</p>
+        <p><code>returns</code>: New array object.</p>
+    </div>
+    <div>
+        <h1>seterrorhandler</h1>
+        <p>Sets the runtime error handler.</p>
+        <p><code class="arg">func<code class="arg">rootTable</code><code class="arg">error</code></code>: function handler</p>
+    </div>
+    <div>
+        <h1>callee</h1>
+        <p><code>returns</code>: Currently running closure.</p>
+    </div>
+    <div>
+        <h1>setdebughook</h1>
+        <p>Sets the debug hook.</p>
+        <p>
+            <code class="arg">hook_func
+                <code class="arg">rootTable</code>
+                <code class="arg">type</code>
+                <code class="arg">sourceName</code>
+                <code class="arg">line</code>
+                <code class="arg">funcName</code>
+            </code>: function</p>
+    </div>
+    <div>
+        <h1>enabledebuginfo</h1>
+        <p>enable/disable the debug line information generation at compile time.</p>
+        <p><code class="arg">enable</code>: If <code>null</code>, it disables debug info.</p>
+    </div>
+    <div>
+        <h1>getroottable</h1>
+        <p>Returns the root table of the VM.</p>
+    </div>
+    <div>
+        <h1>setroottable</h1>
+        <p>Sets the root table of the VM.</p>
+        <p class="arg"><code>table</code>: Table object.</p>
+        <p><code>returns</code>: The previous root table.</p>
+    </div>
+    <div>
+        <h1>getconsttable</h1>
+        <p><code>returns</code>: The const table of the VM.</p>
+    </div>
+    <div>
+        <h1>setconsttable</h1>
+        <p>Sets the const table of the VM.</p>
+        <p class="arg"><code>table</code>: Table object.</p>
+        <p><code>returns</code>: The previous const table.</p>
+    </div>
+    <div>
+        <h1>assert</h1>
+        <p>Throws an exception if <code>exp</code> is <code>null</code> or <code>false</code>.</p>
+        <p>Throws <code>assertion failed</code> string by default, or <code>message</code> if specified.</p>
+        <p><code class="arg">exp</code>: Expression to be checked.</p>
+        <p><code class="optarg">message</code>: Message to be thrown.</p>
+    </div>
+    <div>
+        <h1>print</h1>
+        <p>Prints to the standard output.</p>
+        <p><code class="arg">x</code>: Object to be printed.</p>
+    </div>
+    <div>
+        <h1>error</h1>
+        <p>Prints to the standard error output.</p>
+        <p><code class="arg">x</code>: Object to be printed.</p>
+    </div>
+    <div>
+        <h1>compilestring</h1>
+        <p>Compiles a string containing a squirrel script into a function and returns it.</p>
+        <p><code class="arg">string</code>: Squirrel code.</p>
+        <p><code class="optarg">buffername</code>: </p>
+    </div>
+    <div>
+        <h1>collectgarbage</h1>
+        <p>Runs the garbage collector and returns the number of reference cycles found (and deleted).</p>
+        <p>This function only works on garbage collector builds.</p>
+    </div>
+    <div>
+        <h1>resurrectunreachable</h1>
+        <p>Runs the garbage collector and returns an array containing all unreachable object found.</p>
+        <p>If no unreachable object is found, null is returned instead.</p>
+        <p>This function is meant to help debugging reference cycles.</p>
+        <p>This function only works on garbage collector builds.</p>
+    </div>
+    <div>
+        <h1>type</h1>
+        <p>Return the <code>raw</code> type of an object without invoking the metamethod <code>_typeof</code>.</p>
+        <p><code class="arg">obj</code>: Any object.</p>
+    </div>
+    <div>
+        <h1>getstackinfos</h1>
+        <p><code class="arg">level</code>: Call stack level.</p>
+        <p><code>returns</code>: The stack informations of a given call stack level.</p>
+    </div>
+    <div>
+        <h1>newthread</h1>
+        <p><code class="arg">func</code>: Function object</p>
+        <p><code>returns</code>: New cooperative thread object(coroutine).</p>
+    </div>
+    <div>
+        <h1 class="int">_versionnumber_</h1>
+        <p>Value describing the version of VM and compiler.</p>
+        <p>e.g. for Squirrel 3.0.1 this value will be 301.</p>
+    </div>
+    <div>
+        <h1 class="string">_version_</h1>
+        <p>Version of VM and compiler.</p>
+    </div>
+    <div>
+        <h1 class="int">_charsize_</h1>
+        <p>Size in bytes of the internal VM representation for characters.</p>
+        <p>1 for ASCII builds 2 for UNICODE builds.</p>
+    </div>
+    <div>
+        <h1 class="int">_intsize_</h1>
+        <p>Size in bytes of the internal VM representation for integers</p>
+        <p>4 for 32bit builds 8 for 64bit builds.</p>
+    </div>
+    <div>
+        <h1 class="int">_floatsize_</h1>
+        <p>Size in bytes of the internal VM representation for floats</p>
+        <p>4 for single precision builds 8 for double precision builds.</p>
+    </div>
+    <div class="object">
+        <div>
+            <h1>tofloat</h1>
+            <p>Converts object to float.</p>
+        </div>
+        <div>
+            <h1>tostring</h1>
+            <p>Converts object to string.</p>
+        </div>
+        <div>
+            <h1>tointeger</h1>
+            <p>Converts object to integer.</p>
+        </div>
+        <div>
+            <h1>weakref</h1>
+            <p>Returns a weak reference to the object or the object itself.</p>
+        </div>
+    </div>
+    <div class="string">
+        <div>
+            <h1>tointeger</h1>
+            <p>Converts object to integer.</p>
+            <p><code class="optarg">base</code>: default is 10.</p>
+        </div>
+        <div>
+            <h1>len</h1>
+            <p><code>returns</code>: Length of a string.</p>
+        </div>
+        <div>
+            <h1>slice</h1>
+            <p>Copies string from <code>start</code> to the <code>end</code> (not included).</p>
+            <p><code class="arg">start</code>: If value is negative, the index is calculated as length + start.</p>
+            <p><code class="optarg">end</code>: If value is negative the index is calculated as length + end.</p>
+            <p><code>returns</code>: Section of the string as new string</p>
+        </div>
+        <div>
+            <h1>find</h1>
+            <p>Searches the first occurence of a <code>substr</code> starting from <code>startIndex</code></p>
+            <p><code class="arg">substr</code>: The substring to search.</p>
+            <p><code>startIndex</code>: If ommited, search from the beginning of string.</p>
+            <p><code>returns</code>: Index or <code>null</code> if substr was not found.</p>
+        </div>
+        <div>
+            <h1>tolower</h1>
+            <p><code>returns</code>: Lowercase copy of the string.</p>
+        </div>
+        <div>
+            <h1>toupper</h1>
+            <p><code>returns</code>: Uppercase copy of the string.</p>
+        </div>
+    </div>
+    <div class="table">
+        <div>
+            <h1>len</h1>
+            <p><code>returns</code>: Length of a table.</p>
+        </div>
+        <div>
+            <h1>rawget</h1>
+            <p>Tries to get a value from the slot without employing delegation.</p>
+            <p><code class="arg">key</code>: Key to get value from.</p>
+        </div>
+        <div>
+            <h1>rawset</h1>
+            <p>Sets the slot <code>key</code> with the value <code>val</code> without employing delegation.</p>
+            <p>If the slot does not exists, it will be created.</p>
+            <p><code class="arg">key</code>: </p>
+            <p><code class="arg">value</code>: </p>
+            <p><code>returns</code>: Table itself.</p>
+        </div>
+        <div>
+            <h1>rawdelete</h1>
+            <p>Deletes the slot key without employing delegation.</p>
+            <p><code class="arg">key</code>: Key to be deleted.</p>
+            <p><code>returns</code>: <code>null</code> if key doesn't exist or value that was deleted.</p>
+        </div>
+        <div>
+            <h1>rawin</h1>
+            <p>The function has the same effect as the operator <code>in</code> but does not employ delegation.</p>
+            <p><code class="arg">key</code>: Key to be checked.</p>
+            <p><code>returns</code>: <code>true</code> if the slot <code>key</code> exists.</p>
+        </div>
+        <div>
+            <h1>clear</h1>
+            <p>Removes all the slots from the table.</p>
+            <p><code>returns</code>: Table itself.</p>
+        </div>
+        <div>
+            <h1>setdelegate</h1>
+            <p>Sets the delegate of the table.</p>
+            <p><code class="arg">obj</code>: Delegate to be set or <code>null</code> to remove it.</p>
+            <p><code>returns</code>: Table itself.</p>
+        </div>
+        <div>
+            <h1>getdelegate</h1>
+            <p><code>returns</code>: The table's delegate or <code>null</code> if no delegate was set.</p>
+        </div>
+        <div>
+            <h1>filter</h1>
+            <p>Creates a new table with all values that pass the test implemented by the provided function.</p>
+            <p>In detail, it creates a new table, invokes the specified function for each key-value pair in the original table.</p>
+            <p>
+                <code class="arg">func
+                    <code class="arg">key</code>
+                    <code class="arg">value</code>
+                </code>: Predicate function.
+            </p>
+            <p><code>returns</code>: If <code>true</code>, then the value is added to the newly created table at the same key.</p>
+        </div>
+        <div>
+            <h1>keys</h1>
+            <p><code>returns</code>: An array containing all the keys of the table slots.</p>
+        </div>
+        <div>
+            <h1>values</h1>
+            <p><code>returns</code>: An array containing all the values of the table slots.</p>
+        </div>
+    </div>
+    <div class="array">
+        <div>
+            <h1>len</h1>
+            <p><code>returns</code>: Length of array.</p>
+        </div>
+        <div>
+            <h1>slice</h1>
+            <p>Copies items from <code>start</code> to the <code>end</code> (not included).</p>
+            <p><code class="arg">start</code>: If value is negative, the index is calculated as length + start.</p>
+            <p><code class="optarg">end</code>: If value is negative the index is calculated as length + end.</p>
+            <p><code>returns</code>: Section of the array as new array</p>
+        </div>
+        <div>
+            <h1>clear</h1>
+            <p>Removes all the slots from the array.</p>
+            <p><code>returns</code>: Array itself.</p>
+        </div>
+        <div>
+            <h1>filter</h1>
+            <p>Creates a new array with all values that pass the test implemented by the provided function.</p>
+            <p>In detail, it creates a new array, invokes the specified function for each key-value pair in the original array.</p>
+            <p>
+                <code class="arg">func
+                    <code class="arg">key</code>
+                    <code class="arg">value</code>
+                </code>: Predicate function.
+            </p>
+            <p><code>returns</code>: If <code>true</code>, then the value is added to the newly created array at the same key.</p>
+        </div>
+        <div>
+            <h1>append</h1>
+            <p><code class="arg">value</code>: Appends the value at the end of the array.</p>
+            <p><code>returns</code>: Array itself.</p>
+        </div>
+        <div>
+            <h1>push</h1>
+            <p><code class="arg">value</code>: Appends the value at the end of the array.</p>
+            <p><code>returns</code>: Array itself.</p>
+        </div>
+        <div>
+            <h1>extend</h1>
+            <p>Extends the array by appending all the items in the given array.</p>
+            <p><code>returns</code>: Array itself.</p>
+        </div>
+        <div>
+            <h1>pop</h1>
+            <p>Removes a value from the back of the array.</p>
+            <p><code>returns</code>: Value that was removed.</p>
+        </div>
+        <div>
+            <h1>top</h1>
+            <p><code>returns</code>: The value of the array with the highest index.</p>
+        </div>
+        <div>
+            <h1>insert</h1>
+            <p><code class="arg">index</code>: Insertion index.</p>
+            <p><code class="arg">value</code>: Value to be inserted.</p>
+            <p><code>returns</code>: Array itself.</p>
+        </div>
+        <div>
+            <h1>remove</h1>
+            <p>Removes the value at the position in the array.</p>
+            <p><code class="arg">index</code>: Index of a value to be removed.</p>
+            <p><code>returns</code>: Value that was removed.</p>
+        </div>
+        <div>
+            <h1>resize</h1>
+            <p>Resizes the array.</p>
+            <p><code class="arg">size</code>: Array's new size.</p>
+            <p><code class="optarg">fill</code>Used to fill newly created slots. If ommited, <code>null</code> is used instead.</p>
+            <p><code>returns</code>: Array itself.</p>
+        </div>
+        <div>
+            <h1>sort</h1>
+            <p>Sorts the array in-place.</p>
+            <p>
+                <code class="optarg">func
+                    <code class="arg">a</code>
+                    <code class="arg">b</code>
+                </code>: A custom compare function.
+            </p>
+            <p><code>returns</code>: Array itself.</p>
+        </div>
+        <div>
+            <h1>reverse</h1>
+            <p>Reverse the elements of the array in place.</p>
+            <p><code>returns</code>: Array itself.</p>
+        </div>
+        <div>
+            <h1>map</h1>
+            <p>Creates a new array of the same size.</p>
+            <p>
+                <code class="arg">func
+                    <code class="arg">value</code>
+                    <code class="optarg">index</code>
+                    <code class="optarg">ref</code>
+                </code>: Invokes function for each element and stores the return value to the corresponding element in the newly created array.
+            </p>
+        </div>
+        <div>
+            <h1>apply</h1>
+            <p>
+                <code class="arg">func
+                    <code class="arg">value</code>
+                    <code class="optarg">index</code>
+                    <code class="optarg">ref</code>
+                </code>: Invokes function for each element and replaces the return value to the corresponding element in the array.
+            </p>
+        </div>
+        <div>
+            <h1>reduce</h1>
+            <p>Reduces an array to a single value.</p>
+            <p>
+                <code class="arg">func
+                    <code class="arg">prev_val</code>
+                    <code class="arg">cur_val</code>
+                </code>: Invokes function for each element and passing the initial value (or value from the previous callback call) and the value of the current element.
+            </p>
+            <p>The return value of the function is then used as <code>prev_val</code> for the next element.</p>
+            <p><code class="optarg">initializer</code>: If is present, it is placed before the items of the array in the calculation, and serves as a default when the sequence is empty.</p>
+            <p>If <code>initializer</code> is not given then for sequence contains only one item, reduce() returns the first item, and for empty sequence returns null.</p>
+            <p>Given an sequence with 2 or more elements (including initializer) calls the function with the first two elements as the parameters, gets that result, then calls the function with that result and the third element, gets that result, calls the function with that result and the fourth parameter and so on until all element have been processed.</p>
+            <p><code>returns</code>: Return value of the last invocation of <code>func</code>.</p>
+        </div>
+    </div>
+    <div class="function">
+        <div>
+            <h1>call</h1>
+            <p><code class="arg">this</code>: Environment object.</p>
+            <p><code class="arg">args...</code>: Parameters.</p>
+        </div>
+        <div>
+            <h1>pcall</h1>
+            <p>This function will not invoke the error callback in case of failure.</p>
+            <p><code class="arg">this</code>: Environment object.</p>
+            <p><code class="arg">args...</code>: Parameters.</p>
+        </div>
+        <div>
+            <h1>acall</h1>
+            <p><code class="arg">array of args</code>: Array containing the parameters that will be passed to the called function.</p>
+            <p>Array has to contain required <code>this</code> object at the [0] position.</p>
+        </div>
+        <div>
+            <h1>pacall(array of args)</h1>
+            <p>This function will not invoke the error callback in case of failure.</p>
+            <p><code class="arg">array of args</code>: Array containing the parameters that will be passed to the called function.</p>
+            <p>Array has to contain required <code>this</code> object at the [0] position.</p>
+        </div>
+        <div>
+            <h1>setroot</h1>
+            <p>Sets the root table of a closure.</p>
+            <p><code class="arg">table</code>: New root table for closure.</p>
+        </div>
+        <div>
+            <h1>getroot</h1>
+            <p><code>returns</code>: The root table of the closure.</p>
+        </div>
+        <div>
+            <h1>bindenv</h1>
+            <p>Clones the function and bind the environment object to it.</p>
+            <p><code class="arg">env</code>: Environment object must be table,class or instance.</p>
+            <p>The <code>this</code> parameter of the newly created function will always be set to <code>env</code>.</p>
+            <p>Note that the created function holds a weak reference to its environment object so it cannot be used to control its lifetime.</p>
+        </div>
+        <div>
+            <h1>getinfos</h1>
+            <p><code>returns</code>: Table containing informations about the function, like parameters, name and source name.</p>
+        </div>
+    </div>
+    <div class="class">
+        <div>
+            <h1>instance</h1>
+            <p>This function does not invoke the instance constructor.</p>
+            <p>The constructor must be explicitly called (eg. class_inst.constructor(class_inst) ).</p>
+            <p><code>returns</code>: New instance of the class.</p>
+        </div>
+        <div>
+            <h1>getattributes</h1>
+            <p><code class="arg">membername</code>: If it's <code>null</code> the function returns the class level attributes.</p>
+            <p><code>returns</code>: Attributes of the specified member.</p>
+        </div>
+        <div>
+            <h1>setattributes</h1>
+            <p><code class="arg">membername</code>: If it's <code>null</code> the function sets the class level attributes.</p>
+            <p><code class="arg">attr</code>: Attribute to be set.</p>
+            <p><code>returns</code>: Previous attribute value.</p>
+        </div>
+        <div>
+            <h1>newmember</h1>
+            <p>If present invokes the <code>_newmember</code> metamethod.</p>
+            <p><code class="arg">key</code>: Member name.</p>
+            <p><code class="arg">val</code>: Member value.</p>
+            <p><code class="optarg">attrs</code>: Member attributes.</p>
+            <p><code class="optarg">static</code>: Member will be added as static.</p>
+        </div>
+        <div>
+            <h1>rawnewmember</h1>
+            <p>It doesn't invoke any metamethod.</p>
+            <p><code class="arg">key</code>: Member name.</p>
+            <p><code class="arg">val</code>: Member value.</p>
+            <p><code class="optarg">attrs</code>: Member attributes.</p>
+            <p><code class="optarg">static</code>: Member will be added as static.</p>
+        </div>
+        <div>
+            <h1>rawin</h1>
+            <p>The function has the same effect as the operator <code>in</code> but does not employ delegation.</p>
+            <p><code class="arg">key</code>: Member to be checked.</p>
+            <p><code>returns</code>: <code>true</code> if the member <code>key</code> exists.</p>
+        </div>
+        <div>
+            <h1>rawget</h1>
+            <p>Tries to get a value from the member without employing delegation.</p>
+            <p><code class="arg">key</code>: Key to get value from.</p>
+        </div>
+        <div>
+            <h1>rawset</h1>
+            <p>Sets the member <code>key</code> with the value <code>val</code> without employing delegation.</p>
+            <p>If the member does not exists, it will be created.</p>
+            <p><code class="arg">key</code>: </p>
+            <p><code class="arg">value</code>: </p>
+            <p><code>returns</code>: Table itself.</p>
+        </div>
+    </div>
+    <div class="instance">
+        <div>
+            <h1>getclass</h1>
+            <p><code>returns</code>: Class that created the instance.</p>
+        </div>
+        <div>
+            <h1>rawin</h1>
+            <p>The function has the same effect as the operator <code>in</code> but does not employ delegation.</p>
+            <p><code class="arg">key</code>: Member to be checked.</p>
+            <p><code>returns</code>: <code>true</code> if the member <code>key</code> exists.</p>
+        </div>
+        <div>
+            <h1>rawget</h1>
+            <p>Tries to get a value from the member without employing delegation.</p>
+            <p><code class="arg">key</code>: Key to get value from.</p>
+        </div>
+        <div>
+            <h1>rawset</h1>
+            <p>Sets the member <code>key</code> with the value <code>val</code> without employing delegation.</p>
+            <p>If the member does not exists, it will be created.</p>
+            <p><code class="arg">key</code>: </p>
+            <p><code class="arg">value</code>: </p>
+            <p><code>returns</code>: Table itself.</p>
+        </div>
+    </div>
+    <div class="generator">
+        <div>
+            <h1>getstatus</h1>
+            <p><code>returns</code>: Status of the generator as string : <code>running</code>, <code>dead</code> or <code>suspended</code>.</p>
+        </div>
+    </div>
+    <div class="weakreference">
+        <div>
+            <h1>ref</h1>
+            <p><code>returns</code>: Object that the weak reference is pointing at.</p>
+            <p><code>null</code> if the object that was pointed at was destroyed.</p>
+        </div>
+    </div>
+    <div class="thread">
+        <div>
+            <h1>wakeup</h1>
+            <p>Wakes up a suspended thread.</p>
+            <p><code class="optarg">wakeupval</code>: Parameter that will be used as return value for the function that suspended the thread(usually suspend())</p>
+        </div>
+        <div>
+            <h1>wakeupthrow</h1>
+            <p>Wakes up a suspended thread, throwing an exception in the awaken thread.</p>
+            <p><code class="arg">objToThrow</code>: Object to throw.</p>
+            <p><code class="optarg">propagateError</code>: </p>
+        </div>
+        <div>
+            <h1>getstatus</h1>
+            <p><code>returns</code>: Status of the generator as string : <code>running</code>, <code>dead</code> or <code>suspended</code>.</p>
+        </div>
+        <div>
+            <h1>getstackinfos</h1>
+            <p><code class="arg">level</code>: Call stack level.</p>
+            <p><code>returns</code>: The stack informations of a given call stack level.</p>
+        </div>
+        <div>
+            <h1>call</h1>
+            <p>Starts the thread.</p>
+            <p><code class="arg">args...</code>: Parameters.</p>
+        </div>
+    </div>
+</body>

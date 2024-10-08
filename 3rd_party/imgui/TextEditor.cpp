@@ -492,6 +492,79 @@ TextEditor::Coordinates TextEditor::FindNextWord(const Coordinates & aFrom) cons
 	return at;
 }
 
+TextEditor::Coordinates TextEditor::FindPrevWord(const Coordinates & aFrom) const
+{
+	Coordinates at = aFrom;
+	if (at.mLine >= (int)mLines.size())
+		return at;
+
+	// skip to the next non-word character
+	auto cindex = GetCharacterIndex(aFrom) - 1;
+	bool isword = false;
+	bool skip = false;
+
+	if (cindex < 0)
+	{
+		if (at.mLine == 0)
+		{
+			return Coordinates(0, 0);
+		}
+		at.mLine--;
+		at.mColumn = 0x7fffffff;
+		cindex = GetCharacterIndex(at);
+	}
+
+	if (cindex < (int)mLines[at.mLine].size())
+	{
+		auto& line = mLines[at.mLine];
+		isword = isalnum(line[cindex].mChar);
+		skip = isword;
+	}
+
+	while (!isword || skip)
+	{
+		if (at.mLine < 0)
+		{
+			return Coordinates(0, 0);
+		}
+
+		auto& line = mLines[at.mLine];
+		if (cindex >=0 && cindex < (int)line.size())
+		{
+			isword = isalnum(line[cindex].mChar) || line[cindex].mChar == '_';
+
+			if (isword && !skip)
+			{
+				while(--cindex >= 0)
+				{
+					isword = isalnum(line[cindex].mChar) || line[cindex].mChar == '_';
+					if (!isword)
+					{
+						return Coordinates(at.mLine, GetCharacterColumn(at.mLine, cindex+1));
+					}
+				}
+
+				return Coordinates(at.mLine, GetCharacterColumn(at.mLine, cindex+1));
+			}
+
+			if (!isword)
+				skip = false;
+
+			cindex--;
+		}
+		else
+		{
+			at.mLine--;
+			at.mColumn = 0x7fffffff;
+			cindex = GetCharacterIndex(at) - 1;
+			skip = false;
+			isword = false;
+		}
+	}
+
+	return at;
+}
+
 int TextEditor::GetCharacterIndex(const Coordinates& aCoordinates) const
 {
 	if (aCoordinates.mLine >= mLines.size())
@@ -672,6 +745,54 @@ std::string TextEditor::GetWordAt(const Coordinates & aCoords) const
 
 	for (auto it = istart; it < iend; ++it)
 		r.push_back(mLines[aCoords.mLine][it].mChar);
+
+	return r;
+}
+
+TextEditor::IndentifierAt TextEditor::GetIdentifierAt(const Coordinates & aCoords) const
+{
+	auto start = FindWordStart(aCoords);
+	auto end = FindWordEnd(aCoords);
+	auto prev = FindPrevWord(start);
+	auto prevend = FindWordEnd(prev);
+
+	IndentifierAt r;
+
+	auto istart = GetCharacterIndex(start);
+	auto iend = GetCharacterIndex(end);
+	auto iprevstart = GetCharacterIndex(prev);
+	auto iprevend = GetCharacterIndex(prevend);
+
+	for (auto it = iend; it < mLines[end.mLine].size(); ++it)
+		if (auto c = mLines[end.mLine][it].mChar; !isspace(c)) {
+			r.isFunc = c == '(';
+			break;
+		}
+
+	for (auto it = iprevstart; it < iprevend; ++it)
+		r.lName.push_back(mLines[prev.mLine][it].mChar);
+
+	if (prev.mLine == start.mLine) {
+		for (auto it = iprevend; it < istart; ++it)
+			if (auto c = mLines[prev.mLine][it].mChar; !isspace(c))
+				r.mName.push_back(c);
+	} else {
+		for (auto it = iprevend; it < mLines[prev.mLine].size(); ++it)
+			if (auto c = mLines[prev.mLine][it].mChar; !isspace(c))
+				r.mName.push_back(c);
+
+		for (auto l = prev.mLine + 1; l < start.mLine; l++) {
+			auto &cLine = mLines[l];
+
+			for (auto it = 0; it < cLine.size(); ++it)
+				if (auto c = cLine[it].mChar; !isspace(c))
+					r.mName.push_back(c);
+		}
+	}
+
+
+	for (auto it = istart; it < iend; ++it)
+		r.rName.push_back(mLines[aCoords.mLine][it].mChar);
 
 	return r;
 }
@@ -1111,24 +1232,30 @@ void TextEditor::Render()
 		// Draw a tooltip on known identifiers/preprocessor symbols
 		if (ImGui::IsMousePosValid())
 		{
-			auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
-			if (!id.empty())
-			{
-				auto it = mLanguageDefinition.mIdentifiers.find(id);
-				if (it != mLanguageDefinition.mIdentifiers.end())
+			if (mLanguageDefinition.mIdentifier) {
+				auto id = GetIdentifierAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
+				mLanguageDefinition.mIdentifier(id);
+			} else {
+				auto id = GetWordAt(ScreenPosToCoordinates(ImGui::GetMousePos()));
+
+				if (!id.empty())
 				{
-					ImGui::BeginTooltip();
-					ImGui::TextUnformatted(it->second.mDeclaration.c_str());
-					ImGui::EndTooltip();
-				}
-				else
-				{
-					auto pi = mLanguageDefinition.mPreprocIdentifiers.find(id);
-					if (pi != mLanguageDefinition.mPreprocIdentifiers.end())
+					auto it = mLanguageDefinition.mIdentifiers.find(id);
+					if (it != mLanguageDefinition.mIdentifiers.end())
 					{
 						ImGui::BeginTooltip();
-						ImGui::TextUnformatted(pi->second.mDeclaration.c_str());
+						ImGui::TextUnformatted(it->second.mDeclaration.c_str());
 						ImGui::EndTooltip();
+					}
+					else
+					{
+						auto pi = mLanguageDefinition.mPreprocIdentifiers.find(id);
+						if (pi != mLanguageDefinition.mPreprocIdentifiers.end())
+						{
+							ImGui::BeginTooltip();
+							ImGui::TextUnformatted(pi->second.mDeclaration.c_str());
+							ImGui::EndTooltip();
+						}
 					}
 				}
 			}

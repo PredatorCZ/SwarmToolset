@@ -11,6 +11,7 @@
 
 #include <condition_variable>
 #include <fstream>
+#include <list>
 #include <sstream>
 #include <thread>
 
@@ -22,6 +23,53 @@
 #include "sqstdmath.h"
 #include "sqstdstring.h"
 #include "sqstdsystem.h"
+
+struct IdentifierDesc {
+  enum Command : uint8_t {
+    C_TEXT,
+    C_IDENTIFIER,
+    C_TYPE,
+    C_SAME_LINE,
+    C_NO_PAD_START,
+    C_NO_PAD_END,
+    C_NEXT_LINE,
+  };
+  std::list<std::string> storage;
+  std::vector<const char *> chunks;
+  std::vector<Command> commands;
+
+  void Render() const {
+    size_t chunkId = 0;
+
+    for (auto c : commands) {
+      switch (c) {
+      case C_TEXT:
+        ImGui::TextUnformatted(chunks.at(chunkId++));
+        break;
+      case C_IDENTIFIER:
+        ImGui::TextColored(
+            ImGui::ColorConvertU32ToFloat4(TextEditor::GetDarkPalette().at(
+                int(TextEditor::PaletteIndex::KnownIdentifier))),
+            "%s", chunks.at(chunkId++));
+        break;
+      case C_TYPE:
+        ImGui::TextColored(ImVec4(0xee / 255.f, 0xaa / 255.f, 0xbb / 255.f, 1),
+                           "%s", chunks.at(chunkId++));
+        break;
+      case C_SAME_LINE:
+        ImGui::SameLine();
+        break;
+      case C_NEXT_LINE:
+        ImGui::NewLine();
+        break;
+      default:
+        break;
+      }
+    }
+  }
+};
+
+std::map<std::string_view, IdentifierDesc> INDENTIFIERS;
 
 TextEditor::LanguageDefinition langDef{
     .mName = "Squirrel",
@@ -38,6 +86,15 @@ TextEditor::LanguageDefinition langDef{
     .mCommentEnd = "*/",
     .mSingleLineComment = "//",
     .mTokenize = TextEditor::LanguageDefinition::CPlusPlus().mTokenize,
+    .mIdentifier =
+        [](const TextEditor::IndentifierAt &id) {
+          auto found = INDENTIFIERS.find(id.rName);
+          if (found != INDENTIFIERS.end()) {
+            ImGui::BeginTooltip();
+            found->second.Render();
+            ImGui::EndTooltip();
+          }
+        },
 };
 
 void WarmColors() {
@@ -347,7 +404,7 @@ DocumentEdit &Document(const char *name) {
 
 void DebugHook(HSQUIRRELVM v, SQInteger /*type*/, const SQChar *sourcename,
                SQInteger line, const SQChar *funcname) {
-  // printf("%c %s %lli %s\n", (char)type, sourcename, line, funcname);
+  // printf("%s %lli %s\n",  sourcename, line, funcname);
 
   if (Document(sourcename).editor.GetBreakpoints().contains(line) ||
       debugState == DebugTriggerType::StepInto ||
@@ -519,8 +576,102 @@ void CompilerError(HSQUIRRELVM, const SQChar *sErr, const SQChar *sSource,
   Document(sSource).errors[line].append(sErr).push_back('\n');
 }
 
+#include "pugixml.hpp"
+
+void ParseArgs(IdentifierDesc &idesc, pugi::xml_node &c,
+               bool throwEmpty = false) {
+  size_t hSize = idesc.chunks.size();
+  size_t cSize = idesc.commands.size();
+  idesc.chunks.emplace_back("(");
+  idesc.commands.emplace_back(IdentifierDesc::C_TEXT);
+  idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+  int optlevel = 0;
+  int curarg = 0;
+
+  auto ParseChildren = [&](pugi::xml_node &p) {
+    for (pugi::xml_node &pc : p.children()) {
+      if (pc.name() == std::string_view("code")) {
+        pugi::xml_attribute attrib = pc.attribute("class");
+
+        if (attrib.as_string() == std::string_view("optarg")) {
+          optlevel++;
+          idesc.chunks.emplace_back(curarg ? " [, " : " [");
+          idesc.commands.emplace_back(IdentifierDesc::C_TEXT);
+          idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+        } else if (attrib.as_string() == std::string_view("arg")) {
+          if (curarg) {
+            idesc.chunks.emplace_back(", ");
+            idesc.commands.emplace_back(IdentifierDesc::C_TEXT);
+            idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+          }
+        }
+
+        idesc.chunks.emplace_back(pc.text().as_string());
+        idesc.commands.emplace_back(IdentifierDesc::C_IDENTIFIER);
+        idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+        curarg++;
+        ParseArgs(idesc, pc, true);
+      }
+    }
+  };
+
+  if (throwEmpty) {
+    ParseChildren(c);
+  } else {
+    for (pugi::xml_node &p : c.children("p")) {
+      ParseChildren(p);
+    }
+  }
+
+  if (!curarg && throwEmpty) {
+    idesc.chunks.resize(hSize);
+    idesc.commands.resize(cSize);
+    return;
+  }
+
+  idesc.chunks.emplace_back(")");
+  idesc.commands.emplace_back(IdentifierDesc::C_TEXT);
+  if (throwEmpty) {
+    idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+  }
+}
+
 int main(int, char *argv[]) {
   es::print::AddPrinterFunction(es::Print);
+
+  pugi::xml_document doc;
+  doc.load_file("script_editor/builtin.html", pugi::parse_default | pugi::parse_trim_pcdata);
+
+  for (auto &c : doc.child("body")) {
+    if (c.name() == std::string_view("div")) {
+      pugi::xml_node h1 = c.child("h1");
+      if (h1.empty()) {
+        continue;
+      }
+      const pugi::char_t *h1Class = h1.attribute("class").as_string();
+      IdentifierDesc idesc;
+
+      if (h1Class && *h1Class) {
+        idesc.chunks.emplace_back(h1Class);
+        idesc.commands.emplace_back(IdentifierDesc::C_TYPE);
+        idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+      }
+
+      idesc.chunks.emplace_back(h1.text().as_string());
+      idesc.commands.emplace_back(IdentifierDesc::C_IDENTIFIER);
+
+      if (!h1Class || !*h1Class) {
+        idesc.commands.emplace_back(IdentifierDesc::C_NO_PAD_START);
+        idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+        ParseArgs(idesc, c);
+        idesc.commands.emplace_back(IdentifierDesc::C_NO_PAD_END);
+      }
+
+      idesc.commands.emplace_back(IdentifierDesc::C_NEXT_LINE);
+
+      INDENTIFIERS.emplace(h1.text().as_string(), std::move(idesc));
+    }
+  }
 
   glfwSetErrorCallback(
       [](int type, const char *msg) { printerror('(' << type << ')' << msg); });
@@ -530,8 +681,8 @@ int main(int, char *argv[]) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  int width = 1800;
-  int height = 1020;
+  int width = 1000;
+  int height = 1000;
 
   GLFWwindow *window =
       glfwCreateWindow(width, height, "Script Editor", nullptr, nullptr);
@@ -593,15 +744,18 @@ int main(int, char *argv[]) {
   std::jthread debugLoop([&](std::stop_token tok) {
     std::mutex callMutex;
     std::unique_lock lk(callMutex);
-    while (true) {
-      callRequested.wait(lk);
+    try {
+      while (true) {
+        callRequested.wait(lk);
 
-      if (tok.stop_requested()) {
-        return;
+        if (tok.stop_requested()) {
+          return;
+        }
+        debugging = true;
+        sq_call(v, numParams, SQFalse, SQTrue);
+        debugging = false;
       }
-      debugging = true;
-      sq_call(v, numParams, SQFalse, SQTrue);
-      debugging = false;
+    } catch (const InterruptedCall &) {
     }
   });
 
@@ -759,6 +913,8 @@ int main(int, char *argv[]) {
   glfwDestroyWindow(window);
   glfwDestroyWindow(previewWnd);
   glfwTerminate();
+  debugState = DebugTriggerType::Stop;
+  debugBreak.notify_all();
   debugLoop.request_stop();
   callRequested.notify_all();
   return 0;

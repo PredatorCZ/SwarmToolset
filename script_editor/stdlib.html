@@ -1,0 +1,191 @@
+<body>
+    <div>
+        <h1>dofile</h1>
+        <p>Compiles a squirrel script or loads a precompiled one and executes it.</p>
+        <p><code class="arg">path</code>: Path to a script file.</p>
+        <p><code class="optarg">raiseerror</code>: If <code>true</code>, the compiler error handler is invoked in case of a syntax error.</p>
+        <p><code>returns</code>: Value returned by the script or <code>null</code> if no value is returned.</p>
+    </div>
+    <div>
+        <h1>loadfile</h1>
+        <p>Compiles a squirrel script or loads a precompiled one and returns it as a function.</p>
+        <p><code class="arg">path</code>: Path to a script file.</p>
+        <p><code class="optarg">raiseerror</code>: If <code>true</code>, the compiler error handler is invoked in case of a syntax error.</p>
+        <p><code>returns</code>: Value returned by the script or <code>null</code> if no value is returned.</p>
+    </div>
+    <div>
+        <h1>abs</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Absolute value of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>acos</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Arccosine value of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>asin</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Arcsine value of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>atan</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Arctangent value of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>atan2</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code class="arg">y</code>: Number</p>
+        <p><code>returns</code>: Arctangent value of <code>x</code>/<code>y</code>.</p>
+    </div>
+    <div>
+        <h1>ceil</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Value representing the smallest integer that is greater than or equal to <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>cos</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Cosine value of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>exp</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Exponential value of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>fabs</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Absolute value of <code>x</code> as a float.</p>
+    </div>
+    <div>
+        <h1>floor</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Value representing the largest integer that is less than or equal to <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>log</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Natural logarithm of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>log10</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Logarithm base-10 of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>pow</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code class="arg">y</code>: Number</p>
+        <p><code>returns</code>: <code>x</code> raised to the power of <code>y</code>.</p>
+    </div>
+    <div>
+        <h1>rand</h1>
+        <p><code>returns</code>: Pseudorandom integer in the range 0 to <code>RAND_MAX</code>.</p>
+    </div>
+    <div>
+        <h1>sin</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Sine of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>sqrt</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Square root of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1>srand</h1>
+        <p><code class="arg">seed</code>: Starting point for generating a series of pseudorandom integers.</p>
+    </div>
+    <div>
+        <h1>tan</h1>
+        <p><code class="arg">x</code>: Number</p>
+        <p><code>returns</code>: Tangent of <code>x</code>.</p>
+    </div>
+    <div>
+        <h1 class="integer">RAND_MAX</h1>
+        <p>The maximum value that can be returned by the <code>rand()</code> function.</p>
+    </div>
+    <div>
+        <h1 class="float">PI</h1>
+        <p>The numeric constant pi (3.141592) is the ratio of the circumference of a circle to its diameter.</p>
+    </div>
+    <div>
+        <h1>clock</h1>
+        <p><code>returns</code>: Number of seconds elapsed since the start of the process.</p>
+    </div>
+    <div>
+        <h1>date</h1>
+        <p><code class="optarg">time</code>: If ommited, current time is used.</p>
+        <p><code class="optarg">format</code>: <code>l</code> for local time (default), <code>u</code> for UTC time</p>
+        <p><code>returns</code>: Table containing a date/time split into the slots.</p>
+    </div>
+    <div>
+        <h1>getenv</h1>
+        <p><code class="arg">varname</code>: Environment variable name.</p>
+        <p><code>returns</code>: String containing the value of the environment variable.</p>
+    </div>
+    <div>
+        <h1>time</h1>
+        <p><code>returns</code>: Number of seconds elapsed since midnight 00:00:00, January 1, 1970.</p>
+    </div>
+    <div>
+        <h1>date</h1>
+        <p><code class="optarg">time</code>: If ommited, current time is used.</p>
+        <p><code class="optarg">format</code>: <code>l</code> for local time (default), <code>u</code> for UTC time</p>
+        <p><code>returns</code>: Table containing a date/time split into the slots.</p>
+    </div>
+    <div>
+        <h1>endswith</h1>
+        <p><code class="arg">str</code>: Input string.</p>
+        <p><code class="arg">cmp</code>: String to compare with.</p>
+        <p><code>returns</code>: Returns <code>true</code> if the end of the string matches a the string <code>cmp</code>.</p>
+    </div>
+    <div>
+        <h1>escape</h1>
+        <p><code class="arg">str</code>: Input string.</p>
+        <p><code>returns</code>: String with backslashes before characters that need to be escaped.</p>
+    </div>
+    <div>
+        <h1>format</h1>
+        <p><code class="arg">formatstr</code>: Format following the same rules as in C.</p>
+        <p><code class="optarg">...</code>: Paramaters according to the format.</p>
+        <p><code>returns</code>: Formatted string.</p>
+    </div>
+    <div>
+        <h1>printf</h1>
+        <p>More efficient than <code>print(format(...))</code></p>
+        <p><code class="arg">formatstr</code>: Format following the same rules as in C.</p>
+        <p><code class="optarg">...</code>: Paramaters according to the format.</p>
+    </div>
+    <div>
+        <h1>lstrip</h1>
+        <p><code class="arg">str</code>: Input string.</p>
+        <p><code>returns</code>: String with stripped whitespace at the beginning.</p>
+    </div>
+    <div>
+        <h1>rstrip</h1>
+        <p><code class="arg">str</code>: Input string.</p>
+        <p><code>returns</code>: String with stripped whitespace at the end.</p>
+    </div>
+    <div>
+        <h1>split</h1>
+        <p><code class="arg">str</code>: Input string.</p>
+        <p><code class="arg">separators</code>: String that specifies the characters as to be used for the splitting.</p>
+        <p><code class="optarg">skipempty</code>: If <code>true</code>, empty strings are not added to array.</p>
+        <p><code>returns</code>: Array of strings split at each point where a separator character occurs in <code>str</code>.</p>
+        <p>The separator is not returned as part of any array element.</p>
+    </div>
+    <div>
+        <h1>startswith</h1>
+        <p><code class="arg">str</code>: Input string.</p>
+        <p><code class="arg">cmp</code>: String to compare with.</p>
+        <p><code>returns</code>: Returns <code>true</code> if the beginning of the string matches a the string <code>cmp</code>.</p>
+    </div>
+    <div>
+        <h1>lstrip</h1>
+        <p><code class="arg">str</code>: Input string.</p>
+        <p><code>returns</code>: String with stripped whitespace at the beginning or end.</p>
+    </div>
+</body>
