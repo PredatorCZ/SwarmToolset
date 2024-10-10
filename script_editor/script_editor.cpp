@@ -6,6 +6,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#include "pugixml.hpp"
 #include "spike/master_printer.hpp"
 #include "spike/util/unicode.hpp"
 
@@ -34,7 +35,6 @@ struct IdentifierDesc {
     C_NO_PAD_END,
     C_NEXT_LINE,
   };
-  std::list<std::string> storage;
   std::vector<const char *> chunks;
   std::vector<Command> commands;
 
@@ -69,7 +69,21 @@ struct IdentifierDesc {
   }
 };
 
-std::map<std::string_view, IdentifierDesc> INDENTIFIERS;
+struct IdentKey {
+  std::string_view name;
+  bool isFunc = true;
+
+  bool operator<(const IdentKey &o) const {
+    if (o.isFunc == isFunc) {
+      return name < o.name;
+    }
+
+    return isFunc < o.isFunc;
+  }
+};
+
+std::map<std::string_view, std::map<IdentKey, IdentifierDesc>> IDENTIFIERS;
+std::list<pugi::xml_document> ID_HOLDER;
 
 TextEditor::LanguageDefinition langDef{
     .mName = "Squirrel",
@@ -88,8 +102,27 @@ TextEditor::LanguageDefinition langDef{
     .mTokenize = TextEditor::LanguageDefinition::CPlusPlus().mTokenize,
     .mIdentifier =
         [](const TextEditor::IndentifierAt &id) {
-          auto found = INDENTIFIERS.find(id.rName);
-          if (found != INDENTIFIERS.end()) {
+          IdentKey key{
+              .name = id.rName,
+              .isFunc = id.isFunc,
+          };
+
+          auto rootId = IDENTIFIERS.find("");
+          auto found = rootId->second.find(key);
+
+          if (id.mName == "::") {
+            auto foundGroup = IDENTIFIERS.find(id.lName);
+
+            if (foundGroup != IDENTIFIERS.end()) {
+              auto foundId = foundGroup->second.find(key);
+
+              if (foundId != foundGroup->second.end()) {
+                found = foundId;
+              }
+            }
+          }
+
+          if (found != rootId->second.end()) {
             ImGui::BeginTooltip();
             found->second.Render();
             ImGui::EndTooltip();
@@ -576,8 +609,6 @@ void CompilerError(HSQUIRRELVM, const SQChar *sErr, const SQChar *sSource,
   Document(sSource).errors[line].append(sErr).push_back('\n');
 }
 
-#include "pugixml.hpp"
-
 void ParseArgs(IdentifierDesc &idesc, pugi::xml_node &c,
                bool throwEmpty = false) {
   size_t hSize = idesc.chunks.size();
@@ -606,11 +637,13 @@ void ParseArgs(IdentifierDesc &idesc, pugi::xml_node &c,
           }
         }
 
-        idesc.chunks.emplace_back(pc.text().as_string());
-        idesc.commands.emplace_back(IdentifierDesc::C_IDENTIFIER);
-        idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
-        curarg++;
-        ParseArgs(idesc, pc, true);
+        if (!attrib.empty()) {
+          idesc.chunks.emplace_back(pc.text().as_string());
+          idesc.commands.emplace_back(IdentifierDesc::C_IDENTIFIER);
+          idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+          curarg++;
+          ParseArgs(idesc, pc, true);
+        }
       }
     }
   };
@@ -636,14 +669,14 @@ void ParseArgs(IdentifierDesc &idesc, pugi::xml_node &c,
   }
 }
 
-int main(int, char *argv[]) {
-  es::print::AddPrinterFunction(es::Print);
-
-  pugi::xml_document doc;
-  doc.load_file("script_editor/builtin.html", pugi::parse_default | pugi::parse_trim_pcdata);
+void NewIdentifierDb(const char *path) {
+  pugi::xml_document &doc = ID_HOLDER.emplace_back();
+  doc.load_file(path);
 
   for (auto &c : doc.child("body")) {
     if (c.name() == std::string_view("div")) {
+      const pugi::char_t *divClass = c.attribute("class").as_string();
+
       pugi::xml_node h1 = c.child("h1");
       if (h1.empty()) {
         continue;
@@ -669,9 +702,32 @@ int main(int, char *argv[]) {
 
       idesc.commands.emplace_back(IdentifierDesc::C_NEXT_LINE);
 
-      INDENTIFIERS.emplace(h1.text().as_string(), std::move(idesc));
+      for (pugi::xml_node &p : c.children("p")) {
+        for (pugi::xml_node &pc : p.children()) {
+          idesc.chunks.emplace_back(pc.text().as_string());
+          idesc.commands.emplace_back(pc.name() == std::string_view("code")
+                                          ? IdentifierDesc::C_TYPE
+                                          : IdentifierDesc::C_TEXT);
+          idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+        }
+        idesc.commands.pop_back();
+      }
+
+      IdentKey key{
+          .name = h1.text().as_string(),
+          .isFunc = !h1Class || !*h1Class,
+      };
+
+      IDENTIFIERS.emplace(key, std::move(idesc));
     }
   }
+}
+
+int main(int, char *argv[]) {
+  es::print::AddPrinterFunction(es::Print);
+
+  NewIdentifierDb("script_editor/builtin.html");
+  NewIdentifierDb("script_editor/stdlib.html");
 
   glfwSetErrorCallback(
       [](int type, const char *msg) { printerror('(' << type << ')' << msg); });
