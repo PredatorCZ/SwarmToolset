@@ -508,7 +508,6 @@ bool SQVM::DerefInc(SQInteger op,SQObjectPtr &target, SQObjectPtr &self, SQObjec
 #define arg2 (_i_._arg2)
 #define arg3 (_i_._arg3)
 #define sarg3 ((SQInteger)*((const signed char *)&_i_._arg3))
-#define arg4 (_i_._arg4)
 
 SQRESULT SQVM::Suspend()
 {
@@ -931,7 +930,7 @@ exception_restore:
                 switch(arg3) {
                     case NOT_TABLE: TARGET = SQTable::Create(_ss(this), arg1); continue;
                     case NOT_ARRAY: TARGET = SQArray::Create(_ss(this), 0); _array(TARGET)->Reserve(arg1); continue;
-                    case NOT_CLASS: _GUARD(CLASS_OP(TARGET,arg4,arg1,arg2)); continue;
+                    case NOT_CLASS: _GUARD(CLASS_OP(TARGET,_i_.asClass._arg5,_i_.asClass._arg1,arg2)); continue;
                     default: assert(0); continue;
                 }
             case _OP_APPENDARRAY:

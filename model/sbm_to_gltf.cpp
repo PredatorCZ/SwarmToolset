@@ -368,7 +368,7 @@ void SaveLod(AppContext *ctx, SBM::Header &hdr, size_t lodIndex) {
             .accessorIndex;
 
     for (auto &m : main.materials) {
-      if (m.name == p.materialName) {
+      if (m.name == p.name) {
         prim.material = std::distance(main.materials.data(), &m);
         break;
       }

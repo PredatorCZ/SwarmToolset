@@ -36,17 +36,17 @@ int main(int argc, char *argv[]) {
   }
 
   if (!DetourCreateProcessWithDllA(
-          "/media/data/Games/Starship Troopers/stgame.exe",
+          "stgame.exe",
           const_cast<char *>(args.c_str()),             // args
           NULL,                                         // lpProcessAttributes,
           NULL,                                         // lpThreadAttributes,
           TRUE,                                         // bInheritHandles,
           CREATE_DEFAULT_ERROR_MODE | CREATE_SUSPENDED, // dwCreationFlags,
           NULL,                                         // lpEnvironment,
-          "/media/data/Games/Starship Troopers/",       // lpCurrentDirectory,
+          NULL, //"/media/data/Games/Starship Troopers/",       // lpCurrentDirectory,
           &startInfo,                                   //
           &processInfo,
-          "/home/lukas/github/swarmtoolset/build/launcher/libstmod.dll",
+          "libstmod.dll",
           NULL // pfCreateProcessW
           )) {
     LPSTR lpMsgBuf;

@@ -3008,6 +3008,7 @@ enum ImDrawFlags_
     ImDrawFlags_RoundCornersAll             = ImDrawFlags_RoundCornersTopLeft | ImDrawFlags_RoundCornersTopRight | ImDrawFlags_RoundCornersBottomLeft | ImDrawFlags_RoundCornersBottomRight,
     ImDrawFlags_RoundCornersDefault_        = ImDrawFlags_RoundCornersAll, // Default to ALL corners if none of the _RoundCornersXX flags are specified.
     ImDrawFlags_RoundCornersMask_           = ImDrawFlags_RoundCornersAll | ImDrawFlags_RoundCornersNone,
+    ImDrawFlags_StepColor                   = 1 << 9,
 };
 
 // Flags for ImDrawList instance. Those are set automatically by ImGui:: functions from ImGuiIO settings, and generally not manipulated directly.
@@ -3019,6 +3020,16 @@ enum ImDrawListFlags_
     ImDrawListFlags_AntiAliasedLinesUseTex  = 1 << 1,  // Enable anti-aliased lines/borders using textures when possible. Require backend to render with bilinear filtering (NOT point/nearest filtering).
     ImDrawListFlags_AntiAliasedFill         = 1 << 2,  // Enable anti-aliased edge around filled shapes (rounded rectangles, circles).
     ImDrawListFlags_AllowVtxOffset          = 1 << 3,  // Can emit 'VtxOffset > 0' to allow large meshes. Set when 'ImGuiBackendFlags_RendererHasVtxOffset' is enabled.
+};
+
+struct ImColorArea
+{
+    ImVec2 offset;
+    ImVec2 size;
+    ImU32 leftTopCornerColor;
+    ImU32 rightTopCornerColor;
+    ImU32 rightBottomCornerColor;
+    ImU32 leftBottomCornerColor;
 };
 
 // Draw command list
@@ -3044,12 +3055,16 @@ struct ImDrawList
     ImDrawVert*             _VtxWritePtr;       // [Internal] point within VtxBuffer.Data after each add command (to avoid using the ImVector<> operators too much)
     ImDrawIdx*              _IdxWritePtr;       // [Internal] point within IdxBuffer.Data after each add command (to avoid using the ImVector<> operators too much)
     ImVector<ImVec2>        _Path;              // [Internal] current path building
+    ImVector<ImU32>         _Color;             // [Internal] current path color building
     ImDrawCmdHeader         _CmdHeader;         // [Internal] template of active commands. Fields should match those of CmdBuffer.back().
     ImDrawListSplitter      _Splitter;          // [Internal] for channels api (note: prefer using your own persistent instance of ImDrawListSplitter!)
     ImVector<ImVec4>        _ClipRectStack;     // [Internal]
     ImVector<ImTextureID>   _TextureIdStack;    // [Internal]
     float                   _FringeScale;       // [Internal] anti-alias fringe is scaled by this value, this helps to keep things sharp while zooming at vertex buffer content
     const char*             _OwnerName;         // Pointer to owner window's name for debugging
+    ImVector<ImColorArea>   _ColorAreaStack;    // [Internal] used for 2d color sampling
+    ImVector<ImU32>         _ConstColorStack;   // [Internal]
+    ImVector<bool>          _ColorStack;        // [Internal]
 
     // If you want to create ImDrawList instances, pass them ImGui::GetDrawListSharedData() or create and use your own ImDrawListSharedData (so you can use ImDrawList without ImGui)
     ImDrawList(ImDrawListSharedData* shared_data) { memset(this, 0, sizeof(*this)); _Data = shared_data; }
@@ -3071,13 +3086,19 @@ struct ImDrawList
     //   In future versions we will use textures to provide cheaper and higher-quality circles.
     //   Use AddNgon() and AddNgonFilled() functions if you need to guarantee a specific number of sides.
     IMGUI_API void  AddLine(const ImVec2& p1, const ImVec2& p2, ImU32 col, float thickness = 1.0f);
+    IMGUI_API void  AddLineMultiColor(const ImVec2& p1, const ImVec2& p2, ImU32 p1_col, ImU32 p2_col, float thickness = 1.0f);
     IMGUI_API void  AddRect(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0, float thickness = 1.0f);   // a: upper-left, b: lower-right (== upper-left + size)
+    IMGUI_API void  AddRectMultiColor(const ImVec2& p_min, const ImVec2& p_max, ImU32 col_upr_left, ImU32 col_upr_right, ImU32 col_bot_right, ImU32 col_bot_left, float rounding = 0.0f, ImDrawFlags flags = 0, float thickness = 1.0f);   // a: upper-left, b: lower-right (== upper-left + size)
     IMGUI_API void  AddRectFilled(const ImVec2& p_min, const ImVec2& p_max, ImU32 col, float rounding = 0.0f, ImDrawFlags flags = 0);                     // a: upper-left, b: lower-right (== upper-left + size)
     IMGUI_API void  AddRectFilledMultiColor(const ImVec2& p_min, const ImVec2& p_max, ImU32 col_upr_left, ImU32 col_upr_right, ImU32 col_bot_right, ImU32 col_bot_left);
     IMGUI_API void  AddQuad(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 col, float thickness = 1.0f);
+    IMGUI_API void  AddQuadMultiColor(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 p1_col, ImU32 p2_col, ImU32 p3_col, ImU32 p4_col, float thickness = 1.0f);
     IMGUI_API void  AddQuadFilled(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 col);
+    IMGUI_API void  AddQuadFilledMultiColor(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 p1_col, ImU32 p2_col, ImU32 p3_col, ImU32 p4_col);
     IMGUI_API void  AddTriangle(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, ImU32 col, float thickness = 1.0f);
+    IMGUI_API void  AddTriangleMultiColor(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, ImU32 p1_col, ImU32 p2_col, ImU32 p3_col, float thickness = 1.0f);
     IMGUI_API void  AddTriangleFilled(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, ImU32 col);
+    IMGUI_API void  AddTriangleFilledMultiColor(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, ImU32 p1_col, ImU32 p2_col, ImU32 p3_col);
     IMGUI_API void  AddCircle(const ImVec2& center, float radius, ImU32 col, int num_segments = 0, float thickness = 1.0f);
     IMGUI_API void  AddCircleFilled(const ImVec2& center, float radius, ImU32 col, int num_segments = 0);
     IMGUI_API void  AddNgon(const ImVec2& center, float radius, ImU32 col, int num_segments, float thickness = 1.0f);
@@ -3089,12 +3110,17 @@ struct ImDrawList
     IMGUI_API void  AddBezierCubic(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, ImU32 col, float thickness, int num_segments = 0); // Cubic Bezier (4 control points)
     IMGUI_API void  AddBezierQuadratic(const ImVec2& p1, const ImVec2& p2, const ImVec2& p3, ImU32 col, float thickness, int num_segments = 0);               // Quadratic Bezier (3 control points)
 
+    IMGUI_API void  PushColor(const ImVec2& p_min, const ImVec2& p_max, ImU32 col_upr_left, ImU32 col_upr_right, ImU32 col_bot_right, ImU32 col_bot_left);   // a: upper-left, b: lower-right (== upper-left + size)
+    inline void PushColor(ImU32 color) { _ColorStack.push_back(true); _ConstColorStack.push_back(color);}
+    IMGUI_API void PopColor();
+    IMGUI_API ImU32 SampleColor(const ImVec2 &pos) const;
+
     // General polygon
     // - Only simple polygons are supported by filling functions (no self-intersections, no holes).
     // - Concave polygon fill is more expensive than convex one: it has O(N^2) complexity. Provided as a convenience fo user but not used by main library.
-    IMGUI_API void  AddPolyline(const ImVec2* points, int num_points, ImU32 col, ImDrawFlags flags, float thickness);
-    IMGUI_API void  AddConvexPolyFilled(const ImVec2* points, int num_points, ImU32 col);
-    IMGUI_API void  AddConcavePolyFilled(const ImVec2* points, int num_points, ImU32 col);
+    IMGUI_API void  AddPolyline(const ImVec2* points, int num_points, const ImU32* colors, int num_colors, ImDrawFlags flags, float thickness);
+    IMGUI_API void  AddConvexPolyFilled(const ImVec2* points, int num_points, const ImU32* colors, int num_colors);
+    IMGUI_API void  AddConcavePolyFilled(const ImVec2* points, int num_points, const ImU32* colors, int num_colors);
 
     // Image primitives
     // - Read FAQ to understand what ImTextureID is.
@@ -3107,18 +3133,20 @@ struct ImDrawList
     // Stateful path API, add points then finish with PathFillConvex() or PathStroke()
     // - Important: filled shapes must always use clockwise winding order! The anti-aliasing fringe depends on it. Counter-clockwise shapes will have "inward" anti-aliasing.
     //   so e.g. 'PathArcTo(center, radius, PI * -0.5f, PI)' is ok, whereas 'PathArcTo(center, radius, PI, PI * -0.5f)' won't have correct anti-aliasing when followed by PathFillConvex().
-    inline    void  PathClear()                                                 { _Path.Size = 0; }
-    inline    void  PathLineTo(const ImVec2& pos)                               { _Path.push_back(pos); }
-    inline    void  PathLineToMergeDuplicate(const ImVec2& pos)                 { if (_Path.Size == 0 || memcmp(&_Path.Data[_Path.Size - 1], &pos, 8) != 0) _Path.push_back(pos); }
-    inline    void  PathFillConvex(ImU32 col)                                   { AddConvexPolyFilled(_Path.Data, _Path.Size, col); _Path.Size = 0; }
-    inline    void  PathFillConcave(ImU32 col)                                  { AddConcavePolyFilled(_Path.Data, _Path.Size, col); _Path.Size = 0; }
-    inline    void  PathStroke(ImU32 col, ImDrawFlags flags = 0, float thickness = 1.0f) { AddPolyline(_Path.Data, _Path.Size, col, flags, thickness); _Path.Size = 0; }
+    inline    void  PathClear()                                                 { _Path.Size = 0; _Color.Size = 0; }
+    inline    void  PathLineTo(const ImVec2& pos, ImU32 col)                    { _Path.push_back(pos); _Color.push_back(col); }
+    inline    void  PathLineTo(const ImVec2& pos)                               { _Path.push_back(pos); _Color.push_back(SampleColor(pos)); }
+    inline    void  PathLineToMergeDuplicate(const ImVec2& pos, ImU32 col)      { if (_Path.Size == 0 || memcmp(&_Path.Data[_Path.Size - 1], &pos, 8) != 0) { _Path.push_back(pos); _Color.push_back(col); } }
+    inline    void  PathLineToMergeDuplicate(const ImVec2& pos)                 { if (_Path.Size == 0 || memcmp(&_Path.Data[_Path.Size - 1], &pos, 8) != 0) { _Path.push_back(pos); _Color.push_back(SampleColor(pos)); } }
+    inline    void  PathFillConvex()                                            { AddConvexPolyFilled(_Path.Data, _Path.Size, _Color.Data, _Color.Size); PathClear(); }
+    inline    void  PathFillConcave()                                           { AddConcavePolyFilled(_Path.Data, _Path.Size, _Color.Data, _Color.Size); PathClear(); }
+    inline    void  PathStroke(ImDrawFlags flags = 0, float thickness = 1.0f) { AddPolyline(_Path.Data, _Path.Size, _Color.Data, _Color.Size, flags, thickness); _Path.Size = 0; _Color.Size = 0; }
     IMGUI_API void  PathArcTo(const ImVec2& center, float radius, float a_min, float a_max, int num_segments = 0);
     IMGUI_API void  PathArcToFast(const ImVec2& center, float radius, int a_min_of_12, int a_max_of_12);                // Use precomputed angles for a 12 steps circle
     IMGUI_API void  PathEllipticalArcTo(const ImVec2& center, const ImVec2& radius, float rot, float a_min, float a_max, int num_segments = 0); // Ellipse
     IMGUI_API void  PathBezierCubicCurveTo(const ImVec2& p2, const ImVec2& p3, const ImVec2& p4, int num_segments = 0); // Cubic Bezier (4 control points)
     IMGUI_API void  PathBezierQuadraticCurveTo(const ImVec2& p2, const ImVec2& p3, int num_segments = 0);               // Quadratic Bezier (3 control points)
-    IMGUI_API void  PathRect(const ImVec2& rect_min, const ImVec2& rect_max, float rounding = 0.0f, ImDrawFlags flags = 0);
+    IMGUI_API void  PathRect(const ImVec2& rect_min, const ImVec2& rect_max, ImU32 col_upr_left, ImU32 col_upr_right, ImU32 col_bot_right, ImU32 col_bot_left, float rounding = 0.0f, ImDrawFlags flags = 0);
 
     // Advanced
     IMGUI_API void  AddCallback(ImDrawCallback callback, void* callback_data);  // Your rendering function must check for 'UserCallback' in ImDrawCmd and call the function instead of rendering triangles.

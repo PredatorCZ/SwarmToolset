@@ -6384,9 +6384,11 @@ static void RenderWindowOuterSingleBorder(ImGuiWindow* window, int border_n, ImU
     const ImGuiResizeBorderDef& def = resize_border_def[border_n];
     const float rounding = window->WindowRounding;
     const ImRect border_r = GetResizeBorderRect(window, border_n, rounding, 0.0f);
+    window->DrawList->PushColor(border_col);
     window->DrawList->PathArcTo(ImLerp(border_r.Min, border_r.Max, def.SegmentN1) + ImVec2(0.5f, 0.5f) + def.InnerDir * rounding, rounding, def.OuterAngle - IM_PI * 0.25f, def.OuterAngle);
     window->DrawList->PathArcTo(ImLerp(border_r.Min, border_r.Max, def.SegmentN2) + ImVec2(0.5f, 0.5f) + def.InnerDir * rounding, rounding, def.OuterAngle, def.OuterAngle + IM_PI * 0.25f);
-    window->DrawList->PathStroke(border_col, ImDrawFlags_None, border_size);
+    window->DrawList->PathStroke(ImDrawFlags_None, border_size);
+    window->DrawList->PopColor();
 }
 
 static void ImGui::RenderWindowOuterBorders(ImGuiWindow* window)
@@ -6492,10 +6494,12 @@ void ImGui::RenderWindowDecorations(ImGuiWindow* window, const ImRect& title_bar
                     continue;
                 const ImGuiResizeGripDef& grip = resize_grip_def[resize_grip_n];
                 const ImVec2 corner = ImLerp(window->Pos, window->Pos + window->Size, grip.CornerPosN);
-                window->DrawList->PathLineTo(corner + grip.InnerDir * ((resize_grip_n & 1) ? ImVec2(window_border_size, resize_grip_draw_size) : ImVec2(resize_grip_draw_size, window_border_size)));
-                window->DrawList->PathLineTo(corner + grip.InnerDir * ((resize_grip_n & 1) ? ImVec2(resize_grip_draw_size, window_border_size) : ImVec2(window_border_size, resize_grip_draw_size)));
+                window->DrawList->PushColor(col);
+                window->DrawList->PathLineTo(corner + grip.InnerDir * ((resize_grip_n & 1) ? ImVec2(window_border_size, resize_grip_draw_size) : ImVec2(resize_grip_draw_size, window_border_size)), col);
+                window->DrawList->PathLineTo(corner + grip.InnerDir * ((resize_grip_n & 1) ? ImVec2(resize_grip_draw_size, window_border_size) : ImVec2(window_border_size, resize_grip_draw_size)), col);
                 window->DrawList->PathArcToFast(ImVec2(corner.x + grip.InnerDir.x * (window_rounding + window_border_size), corner.y + grip.InnerDir.y * (window_rounding + window_border_size)), window_rounding, grip.AngleMin12, grip.AngleMax12);
-                window->DrawList->PathFillConvex(col);
+                window->DrawList->PathFillConvex();
+                window->DrawList->PopColor();
             }
         }
 
@@ -15649,7 +15653,8 @@ void ImGui::DebugNodeDrawList(ImGuiWindow* window, ImGuiViewportP* viewport, con
                 {
                     ImDrawListFlags backup_flags = fg_draw_list->Flags;
                     fg_draw_list->Flags &= ~ImDrawListFlags_AntiAliasedLines; // Disable AA on triangle outlines is more readable for very large and thin triangles.
-                    fg_draw_list->AddPolyline(triangle, 3, IM_COL32(255, 255, 0, 255), ImDrawFlags_Closed, 1.0f);
+                    ImU32 col = IM_COL32(255, 255, 0, 255);
+                    fg_draw_list->AddPolyline(triangle, 3, &col, 1, ImDrawFlags_Closed, 1.0f);
                     fg_draw_list->Flags = backup_flags;
                 }
             }
@@ -15677,7 +15682,10 @@ void ImGui::DebugNodeDrawCmdShowMeshAndBoundingBox(ImDrawList* out_draw_list, co
         for (int n = 0; n < 3; n++, idx_n++)
             vtxs_rect.Add((triangle[n] = vtx_buffer[idx_buffer ? idx_buffer[idx_n] : idx_n].pos));
         if (show_mesh)
-            out_draw_list->AddPolyline(triangle, 3, IM_COL32(255, 255, 0, 255), ImDrawFlags_Closed, 1.0f); // In yellow: mesh triangles
+        {
+            ImU32 col = IM_COL32(255, 255, 0, 255);
+            out_draw_list->AddPolyline(triangle, 3, &col, 1, ImDrawFlags_Closed, 1.0f); // In yellow: mesh triangles
+        }
     }
     // Draw bounding boxes
     if (show_aabb)

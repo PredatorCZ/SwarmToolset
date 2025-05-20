@@ -2,11 +2,14 @@
 
 #include <GLFW/glfw3.h>
 
-#include "TextEditor.h"
+#include "font_awesome4/definitions.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
+#include "script_editor.hpp"
+
 #include "pugixml.hpp"
+#include "spike/io/fileinfo.hpp"
 #include "spike/master_printer.hpp"
 #include "spike/util/unicode.hpp"
 
@@ -24,111 +27,6 @@
 #include "sqstdmath.h"
 #include "sqstdstring.h"
 #include "sqstdsystem.h"
-
-struct IdentifierDesc {
-  enum Command : uint8_t {
-    C_TEXT,
-    C_IDENTIFIER,
-    C_TYPE,
-    C_SAME_LINE,
-    C_NO_PAD_START,
-    C_NO_PAD_END,
-    C_NEXT_LINE,
-  };
-  std::vector<const char *> chunks;
-  std::vector<Command> commands;
-
-  void Render() const {
-    size_t chunkId = 0;
-
-    for (auto c : commands) {
-      switch (c) {
-      case C_TEXT:
-        ImGui::TextUnformatted(chunks.at(chunkId++));
-        break;
-      case C_IDENTIFIER:
-        ImGui::TextColored(
-            ImGui::ColorConvertU32ToFloat4(TextEditor::GetDarkPalette().at(
-                int(TextEditor::PaletteIndex::KnownIdentifier))),
-            "%s", chunks.at(chunkId++));
-        break;
-      case C_TYPE:
-        ImGui::TextColored(ImVec4(0xee / 255.f, 0xaa / 255.f, 0xbb / 255.f, 1),
-                           "%s", chunks.at(chunkId++));
-        break;
-      case C_SAME_LINE:
-        ImGui::SameLine();
-        break;
-      case C_NEXT_LINE:
-        ImGui::NewLine();
-        break;
-      default:
-        break;
-      }
-    }
-  }
-};
-
-struct IdentKey {
-  std::string_view name;
-  bool isFunc = true;
-
-  bool operator<(const IdentKey &o) const {
-    if (o.isFunc == isFunc) {
-      return name < o.name;
-    }
-
-    return isFunc < o.isFunc;
-  }
-};
-
-std::map<std::string_view, std::map<IdentKey, IdentifierDesc>> IDENTIFIERS;
-std::list<pugi::xml_document> ID_HOLDER;
-
-TextEditor::LanguageDefinition langDef{
-    .mName = "Squirrel",
-    .mKeywords{
-        "base",       "break", "case",    "catch",    "class",    "clone",
-        "continue",   "const", "default", "delete",   "else",     "enum",
-        "extends",    "for",   "foreach", "function", "if",       "in",
-        "local",      "null",  "resume",  "return",   "switch",   "this",
-        "throw",      "try",   "typeof",  "while",    "yield",    "constructor",
-        "instanceof", "true",  "false",   "static",   "__LINE__", "__FILE__",
-        "rawcall",
-    },
-    .mCommentStart = "/*",
-    .mCommentEnd = "*/",
-    .mSingleLineComment = "//",
-    .mTokenize = TextEditor::LanguageDefinition::CPlusPlus().mTokenize,
-    .mIdentifier =
-        [](const TextEditor::IndentifierAt &id) {
-          IdentKey key{
-              .name = id.rName,
-              .isFunc = id.isFunc,
-          };
-
-          auto rootId = IDENTIFIERS.find("");
-          auto found = rootId->second.find(key);
-
-          if (id.mName == "::") {
-            auto foundGroup = IDENTIFIERS.find(id.lName);
-
-            if (foundGroup != IDENTIFIERS.end()) {
-              auto foundId = foundGroup->second.find(key);
-
-              if (foundId != foundGroup->second.end()) {
-                found = foundId;
-              }
-            }
-          }
-
-          if (found != rootId->second.end()) {
-            ImGui::BeginTooltip();
-            found->second.Render();
-            ImGui::EndTooltip();
-          }
-        },
-};
 
 void WarmColors() {
   ImVec4 *colors = ImGui::GetStyle().Colors;
@@ -198,226 +96,6 @@ void printfunc(HSQUIRRELVM SQ_UNUSED_ARG(v), const SQChar *s, ...) {
   output.emplace_back(buffer);
 }
 
-struct CallInfo {
-  SQStackInfos info;
-  std::string name;
-};
-
-std::vector<CallInfo> callStack;
-std::vector<const char *> callStackNames;
-std::string_view brokeSource;
-std::string_view brokeFunction;
-std::condition_variable debugBreak;
-std::mutex callMutex;
-enum class DebugTriggerType {
-  Continue,
-  StepInto,
-  StepOver,
-  Stop,
-};
-
-DebugTriggerType debugState;
-int callStackIndex = 0;
-
-std::vector<CallInfo> CreateCallStack(HSQUIRRELVM v) {
-  SQInteger level = 0;
-  std::vector<CallInfo> retVal;
-
-  while (SQ_SUCCEEDED(sq_stackinfos(v, level++, &retVal.emplace_back().info))) {
-    CallInfo &curInfo = retVal.back();
-    curInfo.name = std::string(curInfo.info.funcname) + ':' +
-                   std::to_string(curInfo.info.line);
-  }
-
-  return retVal;
-}
-
-void PrintVariable(HSQUIRRELVM v, const SQChar *name, bool isKey = false) {
-  SQObjectType objType = sq_gettype(v, -1);
-
-  bool nodeIsOpen = false;
-
-  if (!isKey) {
-    switch (objType) {
-    case OT_TABLE:
-    case OT_ARRAY:
-      nodeIsOpen = ImGui::TreeNode("##treeNode");
-      ImGui::SameLine();
-      break;
-    default:
-      break;
-    }
-  }
-
-  const ImVec4 typeColor(0xee / 255.f, 0xaa / 255.f, 0xbb / 255.f, 1);
-
-  if (name) {
-    ImGui::TextColored(typeColor, "%s: ", name);
-    ImGui::SameLine();
-  } else if (isKey) {
-    ImGui::PushStyleColor(ImGuiCol_Text, typeColor);
-    ImGui::Text("[");
-    ImGui::SameLine(0, 0);
-  }
-
-  switch (objType) {
-  case OT_NULL:
-    ImGui::Text("null");
-    break;
-  case OT_INTEGER: {
-    SQInteger i;
-    sq_getinteger(v, -1, &i);
-    ImGui::Text("%i", i);
-    break;
-  }
-  case OT_FLOAT: {
-    SQFloat f;
-    sq_getfloat(v, -1, &f);
-    ImGui::Text("%f", f);
-    break;
-  }
-  case OT_USERPOINTER: {
-    SQUserPointer p;
-    sq_getuserpointer(v, -1, &p);
-    ImGui::Text("%p", p);
-    break;
-  }
-  case OT_STRING: {
-    const SQChar *s;
-    sq_getstring(v, -1, &s);
-    ImGui::Text("%s", s);
-    break;
-  }
-  case OT_TABLE:
-    if (isKey) {
-      ImGui::Text("<table>");
-    } else {
-      ImGui::Text("{...}");
-    }
-
-    if (nodeIsOpen) {
-      sq_pushnull(v);
-      while (SQ_SUCCEEDED(sq_next(v, -2))) {
-        sq_push(v, -2);
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        PrintVariable(v, nullptr, true);
-        ImGui::SameLine();
-        PrintVariable(v, nullptr);
-        sq_pop(v, 1);
-      }
-
-      sq_pop(v, 1);
-      ImGui::TreePop();
-    }
-    break;
-  case OT_ARRAY:
-    if (isKey) {
-      ImGui::Text("<array>");
-    } else {
-      ImGui::Text("{...}");
-    }
-    if (nodeIsOpen) {
-      sq_pushnull(v);
-      while (SQ_SUCCEEDED(sq_next(v, -2))) {
-        sq_push(v, -2);
-        ImGui::TableNextRow();
-        ImGui::TableSetColumnIndex(0);
-        PrintVariable(v, nullptr, true);
-        ImGui::SameLine();
-        PrintVariable(v, nullptr);
-        sq_pop(v, 1);
-      }
-
-      sq_pop(v, 1);
-      ImGui::TreePop();
-    }
-    break;
-  case OT_CLOSURE: {
-    const SQChar *s;
-    sq_getclosurename(v, -1);
-    sq_getstring(v, -1, &s);
-    sq_pop(v, 1);
-    ImGui::Text("<function: %s>", s);
-    break;
-  }
-  case OT_NATIVECLOSURE: {
-    const SQChar *s;
-    sq_getclosurename(v, -1);
-    sq_getstring(v, -1, &s);
-    sq_pop(v, 1);
-    ImGui::Text("<native function: %s>", s);
-    break;
-  } break;
-  case OT_GENERATOR:
-    ImGui::Text("<generator>");
-    break;
-  case OT_USERDATA:
-    ImGui::Text("<userdata>");
-    break;
-  case OT_THREAD:
-    ImGui::Text("<thread>");
-    break;
-  case OT_CLASS: {
-    const SQChar *s;
-    sq_getclassname(v, &s);
-    ImGui::Text("<class: %s>", s);
-    break;
-  }
-  case OT_INSTANCE:
-    ImGui::Text("<instance>");
-    break;
-  case OT_WEAKREF:
-    ImGui::Text("<weakref>");
-    break;
-  case OT_BOOL: {
-    SQBool bval;
-    sq_getbool(v, -1, &bval);
-    ImGui::Text("%s", bval ? "true" : "false");
-  } break;
-  default:
-    assert(0);
-    break;
-  }
-  sq_pop(v, 1);
-  if (isKey) {
-    ImGui::SameLine(0, 0);
-    ImGui::Text("]: ");
-    ImGui::PopStyleColor();
-  }
-}
-
-void InspectCurrentFrame(HSQUIRRELVM v) {
-  const SQChar *name;
-  SQUnsignedInteger seq = 0;
-
-  if (!ImGui::BeginTable("varaibles table", 1, ImGuiTableFlags_RowBg)) {
-    return;
-  }
-
-  while ((name = sq_getlocal(v, callStackIndex, seq++))) {
-    ImGui::TableNextRow();
-    ImGui::TableSetColumnIndex(0);
-    ImGui::PushID(seq);
-    PrintVariable(v, name);
-    ImGui::PopID();
-  }
-
-  ImGui::EndTable();
-}
-
-struct InterruptedCall : std::exception {};
-
-struct DocumentEdit {
-  TextEditor editor;
-  double lastTimeTextChanged = 0;
-  TextEditor::ErrorMarkers errors;
-  const char *name;
-  bool active = false;
-  bool opened = false;
-  ImGuiTabItemFlags tabFlags = 0;
-};
-
 std::vector<DocumentEdit> documents;
 std::map<std::string, size_t> docNameToDoc;
 size_t activeDocument = 0;
@@ -429,38 +107,26 @@ DocumentEdit &Document(const char *name) {
     found = docNameToDoc.emplace(name, documents.size()).first;
     DocumentEdit &newDoc = documents.emplace_back();
     newDoc.name = found->first.c_str();
-    newDoc.editor.SetLanguageDefinition(langDef);
+    newDoc.editor.SetLanguageDefinition(SQLangDef());
   }
 
   return documents.at(found->second);
 }
 
-void DebugHook(HSQUIRRELVM v, SQInteger /*type*/, const SQChar *sourcename,
-               SQInteger line, const SQChar *funcname) {
-  // printf("%s %lli %s\n",  sourcename, line, funcname);
-
-  if (Document(sourcename).editor.GetBreakpoints().contains(line) ||
-      debugState == DebugTriggerType::StepInto ||
-      (debugState == DebugTriggerType::StepOver && brokeFunction == funcname)) {
-    brokeSource = sourcename;
-    brokeFunction = funcname;
-    Document(sourcename).editor.SetCurrentBreakPoint(line);
-    callStack = CreateCallStack(v);
-
-    for (auto &s : callStack) {
-      callStackNames.emplace_back(s.name.c_str());
-    }
-
-    std::unique_lock lk(callMutex);
-    debugBreak.wait(lk);
-    Document(sourcename).editor.SetCurrentBreakPoint(-1);
-    callStackNames.clear();
-
-    if (debugState == DebugTriggerType::Stop) {
-      throw InterruptedCall{};
-    }
-  }
+void ActiveDocument(const char *name) {
+  DocumentEdit &doc = Document(name);
+  doc.active = true;
+  doc.tabFlags = ImGuiTabItemFlags_SetSelected;
 }
+
+template <size_t N> void sq_pushstring(HSQUIRRELVM v, const char (&str)[N]) {
+  sq_pushstring(v, str, N - 1);
+}
+
+#define DBG_TOP(...)                                                           \
+  { printf("%i: %lli " #__VA_ARGS__, __LINE__, sq_gettop(v)); }                \
+  __VA_ARGS__;                                                                 \
+  { printf(" %lli\n", sq_gettop(v)); }
 
 void sq_compile(HSQUIRRELVM v, std::stringstream text, const char *fileName) {
   auto readChar = [](SQUserPointer iobuf) -> SQInteger {
@@ -500,7 +166,41 @@ void sq_compile(HSQUIRRELVM v, std::stringstream text, const char *fileName) {
     return c;
   };
 
-  sq_compile(v, readChar, &text, fileName, SQTrue);
+  DBG_TOP(sq_pushroottable(v));
+  DBG_TOP(sq_pushstring(v, "UI"));
+  DBG_TOP(sq_newtable(v));
+  DBG_TOP(sq_newslot(v, -3, SQFalse));
+  DBG_TOP(sq_pop(v, 1));
+
+  if (SQ_FAILED(sq_compile(v, readChar, &text, fileName, SQTrue))) {
+    return;
+  }
+  DBG_TOP(sq_pushroottable(v));
+  DBG_TOP(sq_call(v, 1, SQFalse, SQTrue));
+  DBG_TOP(sq_pop(v, 1));
+
+  AFileInfo finf(fileName);
+  std::string fileNameFile(finf.GetFilename());
+
+  DBG_TOP(sq_pushroottable(v));
+  DBG_TOP(sq_pushroottable(v));
+  DBG_TOP(sq_pushstring(v, "ST_UIS"));
+
+  if (SQ_FAILED(sq_get(v, -2))) {
+    DBG_TOP(sq_pushstring(v, "ST_UIS"));
+    DBG_TOP(sq_newtable(v));
+    DBG_TOP(sq_newslot(v, -3, SQFalse));
+    DBG_TOP(sq_pushstring(v, "ST_UIS"));
+    DBG_TOP(sq_get(v, -2));
+  }
+
+  // root, regsitry, uis table
+
+  DBG_TOP(sq_pushstring(v, fileNameFile.c_str(), fileNameFile.size()));
+  DBG_TOP(sq_pushstring(v, "UI"));
+  DBG_TOP(sq_get(v, -5)); // UI to table
+  DBG_TOP(sq_newslot(v, -3, SQFalse));
+  DBG_TOP(sq_pop(v, 3)); // ST_UIS table and root table
 }
 
 void RenderDocuments(HSQUIRRELVM v) {
@@ -509,14 +209,17 @@ void RenderDocuments(HSQUIRRELVM v) {
       std::string bakName = d.name;
       bakName.append(".bak");
       std::ifstream t(bakName);
+      ImGuiTabItemFlags bakCase = ImGuiTabItemFlags_UnsavedDocument;
       if (t.fail()) {
         t.open(d.name);
+        bakCase = 0;
       }
       if (t.good()) {
         std::string str((std::istreambuf_iterator<char>(t)),
                         std::istreambuf_iterator<char>());
         d.editor.SetText(str);
         d.opened = true;
+        d.tabFlags |= bakCase;
       }
     }
 
@@ -543,7 +246,7 @@ void RenderDocuments(HSQUIRRELVM v) {
     };
 
     if (!ImGui::BeginTabItem(d.name, &d.active, d.tabFlags)) {
-      if (d.tabFlags & ImGuiTabItemFlags_UnsavedDocument) {
+      if (!d.active && d.tabFlags == ImGuiTabItemFlags_UnsavedDocument) {
         ImGui::OpenPopup("Unsaved document");
         ImVec2 center = ImGui::GetMainViewport()->GetCenter();
         ImGui::SetNextWindowPos(center, ImGuiCond_Appearing,
@@ -556,23 +259,30 @@ void RenderDocuments(HSQUIRRELVM v) {
           if (ImGui::Button("Save", ImVec2(120, 0))) {
             Save();
             ImGui::CloseCurrentPopup();
+            d.opened = false;
           }
           ImGui::SetItemDefaultFocus();
           ImGui::SameLine();
           if (ImGui::Button("Don't Save", ImVec2(120, 0))) {
             d.tabFlags ^= ImGuiTabItemFlags_UnsavedDocument;
             ImGui::CloseCurrentPopup();
+            d.opened = false;
           }
           ImGui::SameLine();
           if (ImGui::Button("Cancel", ImVec2(120, 0))) {
             ImGui::CloseCurrentPopup();
             d.active = true;
+            d.tabFlags |= ImGuiTabItemFlags_SetSelected;
           }
           ImGui::EndPopup();
         }
       }
 
       continue;
+    }
+
+    if (d.tabFlags & ImGuiTabItemFlags_SetSelected) {
+      d.tabFlags ^= ImGuiTabItemFlags_SetSelected;
     }
 
     if (d.lastTimeTextChanged + 1 <= ImGui::GetTime()) {
@@ -609,121 +319,156 @@ void CompilerError(HSQUIRRELVM, const SQChar *sErr, const SQChar *sSource,
   Document(sSource).errors[line].append(sErr).push_back('\n');
 }
 
-void ParseArgs(IdentifierDesc &idesc, pugi::xml_node &c,
-               bool throwEmpty = false) {
-  size_t hSize = idesc.chunks.size();
-  size_t cSize = idesc.commands.size();
-  idesc.chunks.emplace_back("(");
-  idesc.commands.emplace_back(IdentifierDesc::C_TEXT);
-  idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
-  int optlevel = 0;
-  int curarg = 0;
-
-  auto ParseChildren = [&](pugi::xml_node &p) {
-    for (pugi::xml_node &pc : p.children()) {
-      if (pc.name() == std::string_view("code")) {
-        pugi::xml_attribute attrib = pc.attribute("class");
-
-        if (attrib.as_string() == std::string_view("optarg")) {
-          optlevel++;
-          idesc.chunks.emplace_back(curarg ? " [, " : " [");
-          idesc.commands.emplace_back(IdentifierDesc::C_TEXT);
-          idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
-        } else if (attrib.as_string() == std::string_view("arg")) {
-          if (curarg) {
-            idesc.chunks.emplace_back(", ");
-            idesc.commands.emplace_back(IdentifierDesc::C_TEXT);
-            idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
-          }
-        }
-
-        if (!attrib.empty()) {
-          idesc.chunks.emplace_back(pc.text().as_string());
-          idesc.commands.emplace_back(IdentifierDesc::C_IDENTIFIER);
-          idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
-          curarg++;
-          ParseArgs(idesc, pc, true);
-        }
+static SQInteger _sqstd_aux_printerror(HSQUIRRELVM v) {
+  SQPRINTFUNCTION pf = sq_geterrorfunc(v);
+  if (pf) {
+    const SQChar *sErr = 0;
+    if (sq_gettop(v) >= 1) {
+      if (SQ_SUCCEEDED(sq_getstring(v, 2, &sErr))) {
+        pf(v, _SC("\nAN ERROR HAS OCCURRED [%s]\n"), sErr);
+      } else {
+        pf(v, _SC("\nAN ERROR HAS OCCURRED [unknown]\n"));
       }
-    }
-  };
-
-  if (throwEmpty) {
-    ParseChildren(c);
-  } else {
-    for (pugi::xml_node &p : c.children("p")) {
-      ParseChildren(p);
+      sqstd_printcallstack(v);
     }
   }
+  return 0;
+}
 
-  if (!curarg && throwEmpty) {
-    idesc.chunks.resize(hSize);
-    idesc.commands.resize(cSize);
+#include <filesystem>
+
+struct FolderTree {
+  std::filesystem::path fullPath;
+  std::string folderName;
+  std::vector<std::unique_ptr<FolderTree>> children{};
+  bool scanned = false;
+  bool isFolder = true;
+};
+
+void ScanTree(FolderTree &tree) {
+  namespace fs = std::filesystem;
+  fs::directory_iterator dirIt(tree.fullPath);
+  tree.scanned = true;
+
+  for (auto &entry : dirIt) {
+    if (!entry.is_directory() && entry.path().extension() != ".nut") {
+      continue;
+    }
+    tree.children.emplace_back(std::make_unique<FolderTree>(FolderTree{
+        .fullPath = entry,
+        .folderName = entry.path().filename(),
+        .isFolder = entry.is_directory(),
+    }));
+  }
+}
+
+void DrawFolderTree(FolderTree &tree, uint32 level, uint32 index,
+                    std::filesystem::path &selectedPath) {
+  uint64 ptrId = index | (uint64(level) >> 32);
+  ImGuiTreeNodeFlags nodeFlags = tree.isFolder ? 0 : ImGuiTreeNodeFlags_Leaf;
+  const bool opened = ImGui::TreeNodeEx(
+      reinterpret_cast<void *>(ptrId), nodeFlags,
+      tree.isFolder ? (ICON_FA_FOLDER " %s") : (ICON_FA_FILE " %s"),
+      tree.folderName.c_str());
+
+  if (!tree.isFolder && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) &&
+      ImGui::IsItemClicked(ImGuiMouseButton_Left)) {
+    selectedPath = tree.fullPath;
+  }
+
+  if (!tree.isFolder) {
+    ImGui::TreePop();
     return;
   }
 
-  idesc.chunks.emplace_back(")");
-  idesc.commands.emplace_back(IdentifierDesc::C_TEXT);
-  if (throwEmpty) {
-    idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
+  if (opened && !tree.scanned && tree.isFolder) {
+    ScanTree(tree);
+  }
+
+  if (opened) {
+    uint32 childIndex = 0;
+
+    for (auto &f : tree.children) {
+      DrawFolderTree(*f, level + 1, childIndex++, selectedPath);
+    }
+
+    ImGui::TreePop();
+  } else if (tree.scanned) {
+    tree.scanned = false;
+    tree.children.clear();
   }
 }
 
-void NewIdentifierDb(const char *path) {
-  pugi::xml_document &doc = ID_HOLDER.emplace_back();
-  doc.load_file(path);
+void sqigui_register_ImVec2(HSQUIRRELVM v);
+void sqigui_register_ImDrawList(HSQUIRRELVM v);
 
-  for (auto &c : doc.child("body")) {
-    if (c.name() == std::string_view("div")) {
-      const pugi::char_t *divClass = c.attribute("class").as_string();
+struct Window {
+  GLFWwindow *window;
+  ImGuiContext *context;
+};
 
-      pugi::xml_node h1 = c.child("h1");
-      if (h1.empty()) {
-        continue;
-      }
-      const pugi::char_t *h1Class = h1.attribute("class").as_string();
-      IdentifierDesc idesc;
+int InitWindow(Window &wnd, int width, int height, const char *name,
+               Window *share = nullptr) {
+  wnd.window = glfwCreateWindow(width, height, name, nullptr,
+                                share ? share->window : nullptr);
 
-      if (h1Class && *h1Class) {
-        idesc.chunks.emplace_back(h1Class);
-        idesc.commands.emplace_back(IdentifierDesc::C_TYPE);
-        idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
-      }
+  if (!wnd.window) {
+    glfwTerminate();
+    return 1;
+  }
 
-      idesc.chunks.emplace_back(h1.text().as_string());
-      idesc.commands.emplace_back(IdentifierDesc::C_IDENTIFIER);
+  static bool GLEW_INITED = false;
 
-      if (!h1Class || !*h1Class) {
-        idesc.commands.emplace_back(IdentifierDesc::C_NO_PAD_START);
-        idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
-        ParseArgs(idesc, c);
-        idesc.commands.emplace_back(IdentifierDesc::C_NO_PAD_END);
-      }
+  if (!GLEW_INITED) {
+    GLEW_INITED = true;
+    glfwMakeContextCurrent(wnd.window);
+    GLenum err = glewInit();
 
-      idesc.commands.emplace_back(IdentifierDesc::C_NEXT_LINE);
-
-      for (pugi::xml_node &p : c.children("p")) {
-        for (pugi::xml_node &pc : p.children()) {
-          idesc.chunks.emplace_back(pc.text().as_string());
-          idesc.commands.emplace_back(pc.name() == std::string_view("code")
-                                          ? IdentifierDesc::C_TYPE
-                                          : IdentifierDesc::C_TEXT);
-          idesc.commands.emplace_back(IdentifierDesc::C_SAME_LINE);
-        }
-        idesc.commands.pop_back();
-      }
-
-      IdentKey key{
-          .name = h1.text().as_string(),
-          .isFunc = !h1Class || !*h1Class,
-      };
-
-      IDENTIFIERS.emplace(key, std::move(idesc));
+    if (GLEW_OK != err) {
+      glfwTerminate();
+      return 2;
     }
   }
+
+  wnd.context = ImGui::CreateContext();
+  ImGui::SetCurrentContext(wnd.context);
+  ImGui_ImplGlfw_InitForOpenGL(wnd.window, true);
+  ImGui_ImplGlfw_SetCallbacksChainForAllWindows(false);
+  ImGui_ImplOpenGL3_Init();
+
+  return 0;
 }
 
-int main(int, char *argv[]) {
+void SwitchWindow(Window &wnd) {
+  glfwMakeContextCurrent(wnd.window);
+  ImGui::SetCurrentContext(wnd.context);
+}
+
+void WindowBegin(Window &wnd) {
+  SwitchWindow(wnd);
+  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  ImGui_ImplOpenGL3_NewFrame();
+  ImGui_ImplGlfw_NewFrame();
+  ImGui::NewFrame();
+}
+
+void WindowEnd(Window &wnd) {
+  ImGui::Render();
+  ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+  glfwSwapBuffers(wnd.window);
+}
+
+void DestroyWindow(Window &wnd) {
+  SwitchWindow(wnd);
+  ImGui_ImplOpenGL3_Shutdown();
+  ImGui_ImplGlfw_Shutdown();
+  glfwDestroyWindow(wnd.window);
+}
+
+int main(int, char *[]) {
   es::print::AddPrinterFunction(es::Print);
 
   NewIdentifierDb("script_editor/builtin.html");
@@ -737,51 +482,44 @@ int main(int, char *argv[]) {
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-  int width = 1000;
-  int height = 1000;
-
-  GLFWwindow *window =
-      glfwCreateWindow(width, height, "Script Editor", nullptr, nullptr);
-
-  if (!window) {
-    glfwTerminate();
-    return 1;
+  Window mainWnd;
+  if (int status = InitWindow(mainWnd, 1000, 1000, "Script Editor"); status) {
+    return status;
   }
 
-  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-  GLFWwindow *previewWnd =
-      glfwCreateWindow(width, height, "Preview", nullptr, window);
-
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-  glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
-  glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-  glfwWindowHint(GLFW_CONTEXT_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_FLUSH);
-
-  glfwMakeContextCurrent(window);
-
-  GLenum err = glewInit();
-
-  if (GLEW_OK != err) {
-    glfwTerminate();
-    return 2;
+  Window previewWnd;
+  if (int status = InitWindow(previewWnd, 1280, 720, "Preview"); status) {
+    return status;
   }
 
-  ImGuiContext *mainCtx = ImGui::CreateContext();
+  // glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+  // GLFWwindow *previewWnd =
+  //    glfwCreateWindow(1280, 720, "Preview", nullptr, window);
+
+  // glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+  // glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
+  // glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+  // glfwWindowHint(GLFW_CONTEXT_RELEASE_BEHAVIOR, GLFW_RELEASE_BEHAVIOR_FLUSH);
+
+  SwitchWindow(mainWnd);
   WarmColors();
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init();
-  ImGuiContext *previewCtx = ImGui::CreateContext();
-  ImGui::SetCurrentContext(previewCtx);
-  ImGui_ImplGlfw_InitForOpenGL(window, true);
-  ImGui_ImplOpenGL3_Init();
+  ImGuiIO &io = ImGui::GetIO();
+  io.Fonts->AddFontDefault();
+
+  // merge in icons from Font Awesome
+  static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+  ImFontConfig icons_config;
+  icons_config.MergeMode = true;
+  icons_config.PixelSnapH = true;
+  io.Fonts->AddFontFromFileTTF("3rd_party/imgui/font_awesome4/font.ttf", 13,
+                               &icons_config, icons_ranges);
 
   static const char *fileToEdit = "methcall.nut";
-  Document(fileToEdit).active = true;
+  ActiveDocument(fileToEdit);
 
   HSQUIRRELVM v = sq_open(1024);
   sq_setprintfunc(v, printfunc, printfunc);
-  sq_setnativedebughook(v, DebugHook);
-  sq_enabledebuginfo(v, SQTrue);
+  Debugger *debugger = InitDebugger(v);
 
   sq_pushroottable(v);
 
@@ -790,45 +528,17 @@ int main(int, char *argv[]) {
   sqstd_register_systemlib(v);
   sqstd_register_mathlib(v);
   sqstd_register_stringlib(v);
+  sqigui_register_ImVec2(v);
+  sqigui_register_ImDrawList(v);
 
   sq_setcompilererrorhandler(v, CompilerError);
+  sq_newclosure(v, _sqstd_aux_printerror, 0);
+  sq_seterrorhandler(v);
 
-  std::condition_variable callRequested;
-  SQInteger numParams = 1;
-  bool debugging = false;
+  FolderTree rootTree{.fullPath = "scripts", .folderName = "scripts"};
 
-  std::jthread debugLoop([&](std::stop_token tok) {
-    std::mutex callMutex;
-    std::unique_lock lk(callMutex);
-    try {
-      while (true) {
-        callRequested.wait(lk);
-
-        if (tok.stop_requested()) {
-          return;
-        }
-        debugging = true;
-        sq_call(v, numParams, SQFalse, SQTrue);
-        debugging = false;
-      }
-    } catch (const InterruptedCall &) {
-    }
-  });
-
-  auto sq_debug_call = [&](SQInteger numParams_) {
-    numParams = numParams_;
-    callRequested.notify_all();
-  };
-
-  while (!glfwWindowShouldClose(window)) {
-    glfwMakeContextCurrent(window);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui::SetCurrentContext(mainCtx);
-
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+  while (!glfwWindowShouldClose(mainWnd.window)) {
+    WindowBegin(mainWnd);
 
     ImGui::ShowDemoWindow();
 
@@ -845,63 +555,16 @@ int main(int, char *argv[]) {
                       ImGuiChildFlags_ResizeX | ImGuiChildFlags_Border);
     ImGui::BeginTabBar("left tabspace");
 
-    if (ImGui::BeginTabItem("Debug")) {
-      ImGui::BeginDisabled(debugging);
-      if (ImGui::Button("Start")) {
-        sq_pushroottable(v);
-        sq_debug_call(1);
-      }
-      ImGui::EndDisabled();
-
-      ImGui::SameLine();
-      ImGui::BeginDisabled(!debugging);
-
-      if (ImGui::Button("Continue")) {
-        debugState = DebugTriggerType::Continue;
-        debugBreak.notify_all();
-      }
-
-      ImGui::SameLine();
-
-      if (ImGui::Button("Step Over")) {
-        debugState = DebugTriggerType::StepOver;
-        debugBreak.notify_all();
-      }
-
-      ImGui::SameLine();
-
-      if (ImGui::Button("Step Into")) {
-        debugState = DebugTriggerType::StepInto;
-        debugBreak.notify_all();
-      }
-
-      ImGui::SameLine();
-
-      if (ImGui::Button("Stop")) {
-        debugState = DebugTriggerType::Stop;
-        debugBreak.notify_all();
-      }
-
-      ImGui::EndDisabled();
-
-      if (ImGui::CollapsingHeader("Local Variables",
-                                  ImGuiTreeNodeFlags_DefaultOpen) &&
-          callStackNames.size()) {
-        InspectCurrentFrame(v);
-      }
-
-      if (ImGui::CollapsingHeader("Call Stack",
-                                  ImGuiTreeNodeFlags_DefaultOpen) &&
-          callStackNames.size()) {
-        ImGui::ListBox("##CallStackListBox", &callStackIndex,
-                       callStackNames.data(), callStackNames.size());
-      }
-
-      ImGui::EndTabItem();
-    }
+    RenderDebugger(debugger);
 
     if (ImGui::BeginTabItem("Workspace")) {
-      ImGui::Button("Samole button");
+      uint32 childIndex = 0;
+      std::filesystem::path selectedPath;
+      DrawFolderTree(rootTree, 0, childIndex++, selectedPath);
+
+      if (!selectedPath.empty()) {
+        ActiveDocument(selectedPath.c_str());
+      }
       ImGui::EndTabItem();
     }
 
@@ -912,7 +575,7 @@ int main(int, char *argv[]) {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
     ImGui::BeginChild("right space");
     ImGui::PopStyleVar();
-    ImGui::BeginChild("editor space", ImVec2(0, height * 0.8),
+    ImGui::BeginChild("editor space", ImVec2(0, viewport->WorkSize.y * 0.8),
                       ImGuiChildFlags_ResizeY | ImGuiChildFlags_Border);
     ImGui::BeginTabBar("right tabspace");
     RenderDocuments(v);
@@ -934,44 +597,62 @@ int main(int, char *argv[]) {
     ImGui::EndChild();
     ImGui::End();
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-    glfwSwapBuffers(window);
+    WindowEnd(mainWnd);
     glfwPollEvents();
 
-    glfwMakeContextCurrent(previewWnd);
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-    ImGui::SetCurrentContext(previewCtx);
+    WindowBegin(previewWnd);
+    viewport = ImGui::GetMainViewport();
+    ImGui::SetNextWindowPos(viewport->WorkPos);
+    ImGui::SetNextWindowSize(viewport->WorkSize);
+    ImGui::Begin("preview workspace", nullptr, windowFlags);
 
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
+    auto sq_getsafe = [](HSQUIRRELVM v, SQInteger idx) {
+      if (SQ_FAILED(sq_get(v, idx))) {
+        SQPRINTFUNCTION pf = sq_geterrorfunc(v);
+        sq_getlasterror(v);
+        const SQChar *err = nullptr;
+        sq_getstring(v, -1, &err);
+        pf(v, "%s", err);
+      }
+    };
 
-    ImGui::Button("Press me");
+    [&] {
+      /* 1 */ sq_pushroottable(v);
+      /* 2 */ sq_pushstring(v, "ST_UIS");
+      /* 2 */ if (SQ_FAILED(sq_get(v, -2))) {
+        sq_pop(v, 1);
+        return;
+      }
+      /* 3 */ sq_pushstring(v, "methcall");
+      /* 3 */ if (SQ_FAILED(sq_get(v, -2))) {
+        sq_pop(v, 2);
+        return;
+      }
+      /* 4 */ sq_pushstring(v, "OnDraw");
+      /* 4 */ if (SQ_FAILED(sq_get(v, -2))) {
+        sq_pop(v, 3);
+        return;
+      }
 
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+      sq_pushstring(v, "ImDrawList");
+      sq_getsafe(v, -6);
+      sq_push(v, -2);
+      sq_push(v, -3);
+      sq_createinstance(v, -3);
+      sq_setinstanceup(v, -1, ImGui::GetWindowDrawList());
+      sq_call(v, 2, SQFalse, SQTrue);
 
-    glfwSwapBuffers(previewWnd);
+      sq_pop(v, 6);
+    }();
+
+    ImGui::End();
+    WindowEnd(previewWnd);
+    //glfwPollEvents();
   }
 
-  ImGui::SetCurrentContext(mainCtx);
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::SetCurrentContext(previewCtx);
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext(mainCtx);
-  ImGui::DestroyContext(previewCtx);
-
-  glfwDestroyWindow(window);
-  glfwDestroyWindow(previewWnd);
+  DestroyWindow(mainWnd);
+  DestroyWindow(previewWnd);
   glfwTerminate();
-  debugState = DebugTriggerType::Stop;
-  debugBreak.notify_all();
-  debugLoop.request_stop();
-  callRequested.notify_all();
+  DeleteDebugger(debugger);
   return 0;
 }

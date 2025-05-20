@@ -1481,7 +1481,8 @@ public:
         Expect(_SC('{'));
         if(attrs != -1) _fs->PopTarget();
         if(base != -1) _fs->PopTarget();
-        _fs->AddInstruction(_OP_NEWOBJ, _fs->PushTarget(), base, attrs,NOT_CLASS,className);
+        _fs->AddInstruction(_OP_NEWOBJ, _fs->PushTarget(), base, attrs,NOT_CLASS);
+        _fs->_instructions.back().asClass._arg5 = className;
         ParseTableOrClass(_SC(';'),_SC('}'));
     }
     void DeleteExpr()

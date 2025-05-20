@@ -5941,8 +5941,10 @@ bool ImGui::ColorPicker4(const char* label, float col[4], ImGuiColorEditFlags fl
             const float a0 = (n)     /6.0f * 2.0f * IM_PI - aeps;
             const float a1 = (n+1.0f)/6.0f * 2.0f * IM_PI + aeps;
             const int vert_start_idx = draw_list->VtxBuffer.Size;
+            draw_list->PushColor(col_white);
             draw_list->PathArcTo(wheel_center, (wheel_r_inner + wheel_r_outer)*0.5f, a0, a1, segment_per_arc);
-            draw_list->PathStroke(col_white, 0, wheel_thickness);
+            draw_list->PathStroke(0, wheel_thickness);
+            draw_list->PopColor();
             const int vert_end_idx = draw_list->VtxBuffer.Size;
 
             // Paint colors over existing vertices
@@ -10138,19 +10140,23 @@ void ImGui::TabItemBackground(ImDrawList* draw_list, const ImRect& bb, ImGuiTabI
     const float rounding = ImMax(0.0f, ImMin((flags & ImGuiTabItemFlags_Button) ? g.Style.FrameRounding : g.Style.TabRounding, width * 0.5f - 1.0f));
     const float y1 = bb.Min.y + 1.0f;
     const float y2 = bb.Max.y - g.Style.TabBarBorderSize;
-    draw_list->PathLineTo(ImVec2(bb.Min.x, y2));
+    draw_list->PushColor(col);
+    draw_list->PathLineTo(ImVec2(bb.Min.x, y2), col);
     draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding, y1 + rounding), rounding, 6, 9);
     draw_list->PathArcToFast(ImVec2(bb.Max.x - rounding, y1 + rounding), rounding, 9, 12);
-    draw_list->PathLineTo(ImVec2(bb.Max.x, y2));
-    draw_list->PathFillConvex(col);
+    draw_list->PathLineTo(ImVec2(bb.Max.x, y2), col);
+    draw_list->PathFillConvex();
     if (g.Style.TabBorderSize > 0.0f)
     {
-        draw_list->PathLineTo(ImVec2(bb.Min.x + 0.5f, y2));
+        const ImU32 borderColor = GetColorU32(ImGuiCol_Border);
+        draw_list->PathLineTo(ImVec2(bb.Min.x + 0.5f, y2), borderColor);
         draw_list->PathArcToFast(ImVec2(bb.Min.x + rounding + 0.5f, y1 + rounding + 0.5f), rounding, 6, 9);
         draw_list->PathArcToFast(ImVec2(bb.Max.x - rounding - 0.5f, y1 + rounding + 0.5f), rounding, 9, 12);
-        draw_list->PathLineTo(ImVec2(bb.Max.x - 0.5f, y2));
-        draw_list->PathStroke(GetColorU32(ImGuiCol_Border), 0, g.Style.TabBorderSize);
+        draw_list->PathLineTo(ImVec2(bb.Max.x - 0.5f, y2), borderColor);
+        draw_list->PathStroke(0, g.Style.TabBorderSize);
     }
+
+    draw_list->PopColor();
 }
 
 // Render text label (with custom clipping) + Unsaved Document marker + Close Button logic

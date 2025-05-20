@@ -883,15 +883,55 @@ void TextEditor::HandleKeyboardInputs()
 		else if (!IsReadOnly() && !ctrl && !shift && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Enter)))
 			EnterCharacter('\n', false);
 		else if (!IsReadOnly() && !ctrl && !alt && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Tab)))
-			EnterCharacter('\t', shift);
+			InsertText("    ");
+			//EnterCharacter('\t', shift);
 
 		if (!IsReadOnly() && !io.InputQueueCharacters.empty())
 		{
 			for (int i = 0; i < io.InputQueueCharacters.Size; i++)
 			{
 				auto c = io.InputQueueCharacters[i];
-				if (c != 0 && (c == '\n' || c >= 32))
-					EnterCharacter(c, shift);
+				if (c != 0 && (c == '\n' || c >= 32)) {
+					switch (c)
+					{
+					case '{' :
+					{
+						EnterCharacter('{', shift);
+						Coordinates coords = GetCursorPosition();
+						EnterCharacter('}', shift);
+						SetCursorPosition(coords);
+						break;
+					}
+					case '[' :
+					{
+						EnterCharacter('[', shift);
+						Coordinates coords = GetCursorPosition();
+						EnterCharacter(']', shift);
+						SetCursorPosition(coords);
+						break;
+					}
+					case '(' :
+					{
+						EnterCharacter('(', shift);
+						Coordinates coords = GetCursorPosition();
+						EnterCharacter(')', shift);
+						SetCursorPosition(coords);
+						break;
+					}
+					case '"' :
+					{
+						EnterCharacter('"', shift);
+						Coordinates coords = GetCursorPosition();
+						EnterCharacter('"', shift);
+						SetCursorPosition(coords);
+						break;
+					}
+
+					default:
+						EnterCharacter(c, shift);
+						break;
+					}
+				}
 			}
 			io.InputQueueCharacters.resize(0);
 		}

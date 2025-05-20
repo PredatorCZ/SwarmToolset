@@ -59,6 +59,10 @@ decltype(openedCacheHandles)::iterator FindHandle(HANDLE handle) {
   return openedCacheHandles.end();
 }
 
+FILE *LOG = fopen("loggies.txt", "w");
+
+#define printf(...) fprintf(LOG, __VA_ARGS__);
+
 #pragma region Read File
 ///////////////////////////////
 //---------READ FILE---------//
@@ -197,7 +201,7 @@ HANDLE WINAPI NewFindFirstFileA(LPCSTR lpFileName,
 
   if (normFileName.starts_with(workDir)) {
     normFileName.erase(0, workDir.size() + 1);
-    //printf("Find CWD file: %s\n", normFileName.c_str());
+    // printf("Find CWD file: %s\n", normFileName.c_str());
 
     if (size_t foundWC = normFileName.find_last_of('*');
         foundWC != std::string::npos) {
@@ -231,7 +235,7 @@ HANDLE WINAPI NewFindFirstFileA(LPCSTR lpFileName,
         lpFindFileData->nFileSizeLow = stcache::FileSize(*currentCacheFile);
         lpFindFileData->ftLastWriteTime = cacheFiletime;
 
-        //printf("Found cached file: %s\n", lpFindFileData->cFileName);
+        // printf("Found cached file: %s\n", lpFindFileData->cFileName);
 
         return searchHandle;
       }
@@ -364,7 +368,7 @@ HANDLE WINAPI NewCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess,
       normFileName.erase(foundWC - 1, 2);
     }
 
-    //printf("Accessing CWD file: %s\n", normFileName.c_str());
+    // printf("Accessing CWD file: %s\n", normFileName.c_str());
 
     auto currentCacheFile = stcache::GetFile(normFileName);
 
@@ -372,7 +376,7 @@ HANDLE WINAPI NewCreateFileA(LPCSTR lpFileName, DWORD dwDesiredAccess,
       HANDLE newHandle;
       DuplicateHandle(GetCurrentProcess(), cacheHandle, GetCurrentProcess(),
                       &newHandle, 0, FALSE, DUPLICATE_SAME_ACCESS);
-      //printf("Cached file: %s\n", normFileName.c_str());
+      // printf("Cached file: %s\n", normFileName.c_str());
       openedCacheHandles.emplace_back(CacheHandle{
           .handle = newHandle,
           .file = currentCacheFile,
@@ -488,6 +492,44 @@ void LoadCacheFolder() {
   virtualSlak = stcache::MakeVirtualSlak();
 }
 
+/*static auto license = reinterpret_cast<int (*)(int, int)>(0x53C1B0);
+
+int  License(int a1, int a2) {
+  int ret = license(a1, a2);
+  printf("LICENSE %ul, %ul, %ul\n", ret, a1, a2);
+  return ret;
+}*/
+
+namespace dnk {
+struct string {
+  const char *c_str() const { return capacity >= 0x10 ? dataPtr : dataStack; }
+  bool empty() const { return size_ == 0; }
+  size_t size() const { return size_; }
+
+private:
+  void *alloc;
+  union {
+    char dataStack[16];
+    char *dataPtr;
+  };
+  size_t size_;
+  size_t capacity;
+};
+} // namespace dnk
+
+struct OverlayText {};
+
+static auto OverlayText_SetText_Old =
+    reinterpret_cast<void(__thiscall *)(OverlayText *, dnk::string)>(0x7510B0);
+
+void __thiscall OverlayText_SetText(OverlayText *this_, dnk::string a2) {
+  if (a2.size()) {
+    printf("OVERLAY TEXT: %s\n", a2.c_str());
+  }
+
+  OverlayText_SetText_Old(this_, a2);
+}
+
 BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
   (void)hinst;
   (void)reserved;
@@ -511,6 +553,10 @@ BOOL WINAPI DllMain(HINSTANCE hinst, DWORD dwReason, LPVOID reserved) {
     DetourAttach(&OldFindFirstFileA, NewFindFirstFileA);
     DetourAttach(&OldFindClose, NewFindClose);
     DetourAttach(&OldFindNextFileA, NewFindNextFileA);
+
+    DetourAttach(&OverlayText_SetText_Old, OverlayText_SetText);
+
+    // DetourAttach(&license, License);
 
     LONG error = DetourTransactionCommit();
 
