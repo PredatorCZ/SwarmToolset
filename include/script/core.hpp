@@ -51,6 +51,20 @@ struct ResourceRef {
 
 using ResourceArray = std::vector<ResourceRef>;
 
+enum class FilePathType {
+  Text,
+  Resource,
+  Image,
+  Model,
+  Animtion,
+  Movie,
+  Sound,
+  Folder,
+};
+
+template<FilePathType TYPE>
+struct FilePath : AFileInfo {};
+
 struct CollisionFlags {
   bool terrain;
   bool bullet;

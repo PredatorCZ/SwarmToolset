@@ -52,7 +52,7 @@ struct AIAmmoBundle : ModelDetailDynamic {
   bool active;
   ResourceRef ammoPickupType;
   float respawnTime;
-  AIAmmoBundleAIAmmoBundleQuicksave aiAmmoBundleAIAmmoBundleQuicksave;
+  AIAmmoBundleAIAmmoBundleQuicksave aiAmmoBundleAiAmmoBundleQuicksave;
   AIAmmoBundleAIAmmoBundleQuicksave quicksave;
 };
 

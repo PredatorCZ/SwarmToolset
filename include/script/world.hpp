@@ -103,7 +103,7 @@ struct WorldObjectLight : WorldObject {
   LightInfluence influence;
   bool dynamic;
   float attenuation;
-  AFileInfo spotTexture;
+  FilePath<FilePathType::Image> spotTexture;
   float spotOffset;
   ResourceArray modifiers;
   std::vector<WorldObjectLightContextOverride> contextOverrides;

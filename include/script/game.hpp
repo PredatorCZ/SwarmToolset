@@ -13,16 +13,16 @@ struct GameSessionDocument : Resource {
 };
 
 struct GameSessionFilesDirs {
-  std::string levelMovie;
-  std::string levelBriefingImage;
-  std::string missionSuccessImage;
-  std::string missionFailImage;
-  std::string missionCourtMarshallImage;
-  std::string interMissionImage1;
-  std::string interMissionImage2;
-  std::string missionSuccessMovie;
-  std::string missionFailMovie;
-  std::string missionFailCourtMarshallMovie;
+  FilePath<FilePathType::Movie> levelMovie;
+  FilePath<FilePathType::Image> levelBriefingImage;
+  FilePath<FilePathType::Image> missionSuccessImage;
+  FilePath<FilePathType::Image> missionFailImage;
+  FilePath<FilePathType::Image> missionCourtMarshallImage;
+  FilePath<FilePathType::Image> interMissionImage1;
+  FilePath<FilePathType::Image> interMissionImage2;
+  FilePath<FilePathType::Movie> missionSuccessMovie;
+  FilePath<FilePathType::Movie> missionFailMovie;
+  FilePath<FilePathType::Movie> missionFailCourtMarshallMovie;
   void ReflectorTag();
 };
 
@@ -46,7 +46,7 @@ struct GameSessionCampaign {
 };
 
 struct GameSession : Resource {
-  std::vector<std::string> globalScriptsExcluded;
+  std::vector<FilePath<FilePathType::Resource>> globalScriptsExcluded;
   GameSessionFilesDirs filesDirs;
   GameSessionResources resources;
   GameSessionCampaign campaign;
@@ -64,7 +64,7 @@ enum UIUNLOCKABLE {
 struct UIUnlockableExtra : ResourcePack {
   int32 unlockableExtraId;
   UIUNLOCKABLE unlockableExtraType;
-  AFileInfo filename;
+  FilePath<FilePathType::Image> filename;
   std::string displayString;
   int32 unlockingLevelID;
   std::string unlockableHow;
@@ -81,7 +81,7 @@ enum GITYPE {
 
 struct GameInfoFileDirs {
   std::string directory;
-  std::string previewImage;
+  FilePath<FilePathType::Image> previewImage;
   void ReflectorTag();
 };
 

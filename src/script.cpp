@@ -1,7 +1,12 @@
 #include "script.hpp"
 #include "script/core.hpp"
+#include "spike/crypto/jenkinshash.hpp"
+#include "spike/io/fileinfo.hpp"
 #include "spike/master_printer.hpp"
 #include "spike/reflect/reflector.hpp"
+#include "spike/reflect/reflector_fwd.hpp"
+#include <algorithm>
+#include <cctype>
 #include <istream>
 
 struct ScriptParserImpl : ScriptParser {
@@ -229,7 +234,9 @@ struct ScriptParserImpl : ScriptParser {
         case '\t':
           break;
         case ']':
-          newValue(PopToken());
+          if (bufferIter > 0) {
+            newValue(PopToken());
+          }
           return;
         case ',':
           newValue(PopToken());
@@ -283,7 +290,7 @@ struct ScriptParserImpl : ScriptParser {
       EnterScope();
       auto className = PopToken();
 
-      if (className.empty()) {
+      if (className.empty() || className == "class_InstanceObjectBuilder") {
         return;
       }
       newClass(className);
@@ -405,11 +412,9 @@ void LoadScript(std::istream &str,
 
       if (subClass.data) {
         if (subClass.ClassName() == "ResourceRef") {
-          subClass["asString"] = name;
-          return;
+          member = subClass["asString"];
         } else if (subClass.ClassName() == "Color") {
           member = subClass["raw"];
-          return;
         }
       }
     }
@@ -422,6 +427,9 @@ void LoadScript(std::istream &str,
         PrintWarning("Expected boolean for", lastClass.ClassName(),
                      "::", inst.rfStatic->typeNames[type.index],
                      " got: ", name);
+        if (curArrayItem > -1) {
+          curArrayItem++;
+        }
         return;
       }
       member.ReflectValue(isTrue, curArrayItem);
@@ -429,9 +437,17 @@ void LoadScript(std::istream &str,
         curArrayItem++;
       }
       return;
+    } else if (type.type == REFType::String &&
+               type.asClass.typeHash == JenHash("FilePath")) {
+      std::string nPath(name);
+      std::transform(nPath.begin(), nPath.end(), nPath.begin(),
+                     [](char i) { return std::tolower(i); });
+      AFileInfo finf(nPath);
+      member.ReflectValue(finf.GetFullPath(), std::max(index, curArrayItem));
+    } else {
+      member.ReflectValue(name, std::max(index, curArrayItem));
     }
 
-    member.ReflectValue(name, std::max(index, curArrayItem));
     if (curArrayItem > -1) {
       curArrayItem++;
     }

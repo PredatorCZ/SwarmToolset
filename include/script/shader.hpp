@@ -5,9 +5,9 @@ struct TextureVelocity : Vector2 {
 };
 
 struct ResourceShaderBumpTexBlend2 : ResourcePack {
-  AFileInfo diffuseTexture1;
-  AFileInfo diffuseTexture2;
-  AFileInfo normalMapTexture;
+  FilePath<FilePathType::Image> diffuseTexture1;
+  FilePath<FilePathType::Image> diffuseTexture2;
+  FilePath<FilePathType::Image> normalMapTexture;
   Color ambient;
   Color diffuse;
   Color specular;
@@ -18,8 +18,8 @@ struct ResourceShaderBumpTexBlend2 : ResourcePack {
 };
 
 struct ResourceShaderOverlay : ResourcePack {
-  AFileInfo diffuseTexture;
-  AFileInfo normalMapTexture;
+  FilePath<FilePathType::Image> diffuseTexture;
+  FilePath<FilePathType::Image> normalMapTexture;
   Color ambient;
   Color diffuse;
   Color specular;
@@ -54,9 +54,9 @@ struct ShaderParamsBumpSpec : ResourcePack {
 };
 
 struct ResourceShaderAnisotropic : ResourcePack {
-  AFileInfo diffuseTexture;
-  AFileInfo normalMapTexture;
-  AFileInfo anisotropicMapTexture;
+  FilePath<FilePathType::Image> diffuseTexture;
+  FilePath<FilePathType::Image> normalMapTexture;
+  FilePath<FilePathType::Image> anisotropicMapTexture;
   Color ambient;
   Color diffuse;
   Color specular;
@@ -71,7 +71,7 @@ struct ResourceShaderAnisotropic : ResourcePack {
 };
 
 struct ResourceShaderUnlit : ResourcePack {
-  AFileInfo diffuseTexture;
+  FilePath<FilePathType::Image> diffuseTexture;
   Color ambient;
   Color diffuse;
   bool alphaBlended;
@@ -88,8 +88,8 @@ struct ResourceShaderUnlit : ResourcePack {
 };
 
 struct ResourceShaderPhong : ResourcePack {
-  AFileInfo diffuseTexture;
-  AFileInfo normalMapTexture;
+  FilePath<FilePathType::Image> diffuseTexture;
+  FilePath<FilePathType::Image> normalMapTexture;
   Color ambient;
   Color diffuse;
   Color specular;
@@ -110,7 +110,7 @@ struct ResourceShaderPhong : ResourcePack {
 };
 
 struct ResourceShaderGlow : ResourcePack {
-  AFileInfo glowTexture;
+  FilePath<FilePathType::Image> glowTexture;
   float glowUScale;
   float glowVScale;
   float emissiveFactor;
@@ -121,17 +121,17 @@ struct ResourceShaderGlow : ResourcePack {
 };
 
 struct ResourceShaderTintDistort : ResourcePack {
-  AFileInfo tintTexture;
-  AFileInfo distortTexture;
+  FilePath<FilePathType::Image> tintTexture;
+  FilePath<FilePathType::Image> distortTexture;
   Color ambient;
   TextureVelocity textureVelocity;
   bool blended;
 };
 
 struct ResourceShaderTexBlend3 : ResourcePack {
-  AFileInfo diffuseTexture1;
-  AFileInfo diffuseTexture2;
-  AFileInfo diffuseTexture3;
+  FilePath<FilePathType::Image> diffuseTexture1;
+  FilePath<FilePathType::Image> diffuseTexture2;
+  FilePath<FilePathType::Image> diffuseTexture3;
   Color ambient;
   Color diffuse;
   Color specular;

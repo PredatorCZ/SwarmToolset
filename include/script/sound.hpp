@@ -15,7 +15,7 @@ struct ResourceSound3DParameters {
 };
 
 struct ResourceSound : ResourcePack {
-  AFileInfo filename;
+  FilePath<FilePathType::Sound> filename;
   SoundType type;
   bool streaming;
   bool positional3D;

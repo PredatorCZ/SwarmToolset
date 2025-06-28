@@ -9,6 +9,12 @@
 #include "spike/reflect/detail/reflector_class.hpp"
 #include "spike/reflect/detail/reflector_enum.hpp"
 
+template <FilePathType type> struct _getType<FilePath<type>> : reflTypeDefault_ {
+  static constexpr REFType TYPE = REFType::String;
+  static constexpr uint8 SIZE = uint8(type);
+  static constexpr JenHash Hash() { return "FilePath"; }
+};
+
 // clang-format off
 REFLECT(ENUMERATION(STANDARD_POSE),
 ENUM_MEMBER(STANDARD_POSE_NONE),
@@ -809,8 +815,8 @@ REFLECT(BASEDCLASS(ModelDetailDynamic, AIAmmoBundle),
 MEMBER(active, "Active"),
 MEMBER(ammoPickupType, "AmmoPickupType"),
 MEMBER(respawnTime, "RespawnTime"),
-MEMBER(aiAmmoBundleAIAmmoBundleQuicksave,"QUICKSAVE_AIAmmoBundle"),
-MEMBER(aiAmmoBundleAIAmmoBundleQuicksave,"QUICKSAVE"));
+MEMBER(aiAmmoBundleAiAmmoBundleQuicksave,"QUICKSAVE_AIAmmoBundle"),
+MEMBER(quicksave,"QUICKSAVE"));
 
 REFLECT(BASEDCLASS(WorldObjectModel, AIPickupItemHealth),
 MEMBER(reActivateTime, "ReActivateTime"),

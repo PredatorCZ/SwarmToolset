@@ -23,7 +23,7 @@ struct ResourceObjectModelMaterial {
 };
 
 struct ResourceObjectModel : ResourcePack {
-  AFileInfo fileName;
+  FilePath<FilePathType::Model> fileName;
   ShadowGeneration shadowGeneration;
   bool animated;
   std::vector<ResourceObjectModelMaterial> materials;
@@ -51,7 +51,7 @@ struct ResourceObjectAnimationCompression {
 };
 
 struct ResourceObjectAnimation : ResourcePack {
-  AFileInfo fileName;
+  FilePath<FilePathType::Animtion> fileName;
   float length;
   float soundProbability;
   ResourceRef sound;
@@ -103,8 +103,8 @@ struct ResourceObjectRocketTargetNode : ResourcePack {
 };
 
 struct ResourceDecal : ResourcePack {
-  AFileInfo texDiffuse;
-  AFileInfo texNormal;
+  FilePath<FilePathType::Image> texDiffuse;
+  FilePath<FilePathType::Image> texNormal;
   Color ambient;
   Color diffuse;
   Color specular;

@@ -13,9 +13,10 @@
 #include "spike/reflect/detail/reflector_class.hpp"
 #include "spike/reflect/detail/reflector_enum.hpp"
 
-template <> struct _getType<AFileInfo> : reflTypeDefault_ {
+template <FilePathType type> struct _getType<FilePath<type>> : reflTypeDefault_ {
   static constexpr REFType TYPE = REFType::String;
-  static constexpr uint8 SIZE = 0;
+  static constexpr uint8 SIZE = uint8(type);
+  static constexpr JenHash Hash() { return "FilePath"; }
 };
 
 #define ENUM_ALIAS(which, alias) EnumProxy { alias, uint64(enum_type::which) }

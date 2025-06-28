@@ -33,7 +33,7 @@ struct ResourceSpeechBankPsiOps : ResourceSpeechBankGrunt {};
 struct ResourceSpeechBankMechanic : ResourceSpeechBankGrunt {};
 
 struct ResourceStringTable : ResourcePack {
-  AFileInfo filename;
+  FilePath<FilePathType::Text> filename;
 };
 
 struct ChatScript : ResourcePack {

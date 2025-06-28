@@ -3,7 +3,7 @@
 #include "enum_share.hpp"
 
 struct ResourceParticleTypeSimple : ResourcePack {
-  AFileInfo texture;
+  FilePath<FilePathType::Image> texture;
   Color emissive;
   BLEND srcBlend;
   BLEND destBlend;

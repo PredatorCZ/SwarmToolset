@@ -43,7 +43,7 @@ AppInfo_s *AppInitModule() { return &appInfo; }
 struct ClassInfo {
   const reflectorStatic *ref;
   std::string name;
-  std::set<std::string> members;
+  std::set<std::string> members{};
 };
 
 std::set<const reflectorStatic *> processedClasses;
@@ -73,7 +73,7 @@ void AppFinishContext() {
       for (auto &name : c.members) {
         size_t maxCommon = 0;
         size_t maxCommonIndex = 0;
-        size_t minFirstMatch = 0;
+        int minFirstMatch = 0;
 
         if (name == "__GUID" || name == "Package") {
           continue;
