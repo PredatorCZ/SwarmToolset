@@ -86,7 +86,7 @@ static SQInteger ImVec2_cloned(HSQUIRRELVM v) {
 
   ImVec2 *vec = new ImVec2(*static_cast<ImVec2 *>(self));
   sq_setinstanceup(v, 1, vec);
-
+  sq_setreleasehook(v, 1, ImVec2_destructor);
   return 0;
 }
 
