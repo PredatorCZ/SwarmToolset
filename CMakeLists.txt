@@ -37,6 +37,8 @@ set_target_properties(stcache PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 add_subdirectory(${TPD_PATH}/veverka)
 add_subdirectory(${TPD_PATH}/imgui)
+
+add_subdirectory(gui)
 add_subdirectory(script_editor)
 
 add_spike_subdir(slack)
@@ -53,3 +55,4 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Release)
 endif()
 
 #add_subdirectory(launcher)
+add_subdirectory(data_editor)
