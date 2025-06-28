@@ -9,7 +9,8 @@ add_library(
   imgui_draw.cpp
   imgui_tables.cpp
   imgui_widgets.cpp
-  TextEditor.cpp)
+  TextEditor.cpp
+  ImGuiFileDialog.cpp)
 
 target_link_libraries(ImGui INTERFACE dl)
 target_include_directories(ImGui INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
