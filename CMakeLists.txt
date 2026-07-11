@@ -6,6 +6,7 @@ project(SwarmToolset)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
+option(EDITORS "Build GUI editors" ON)
 option(CLI "" ON)
 option(GLTF "" ON)
 set(EXPOSE_SYMBOLS spike;pugixml;gltf)
@@ -14,7 +15,7 @@ set(TPD_PATH ${CMAKE_CURRENT_SOURCE_DIR}/3rd_party)
 
 add_subdirectory(${TPD_PATH}/spike)
 include(version)
-#toolset_version()
+toolset_version()
 
 set_target_properties(spike_cli PROPERTIES OUTPUT_NAME swarm_toolset)
 
@@ -44,11 +45,17 @@ target_link_libraries(stcache LINK_PUBLIC zstd-objects)
 target_include_directories(stcache PUBLIC include)
 set_target_properties(stcache PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
+if(EDITORS)
+
 add_subdirectory(${TPD_PATH}/veverka)
 add_subdirectory(${TPD_PATH}/imgui)
 
 add_subdirectory(gui)
 add_subdirectory(script_editor)
+
+add_subdirectory(data_editor)
+
+endif()
 
 add_spike_subdir(slack)
 add_spike_subdir(material)
@@ -64,5 +71,4 @@ if (NOT ${CMAKE_BUILD_TYPE} STREQUAL Release)
 endif()
 
 #add_subdirectory(launcher)
-add_subdirectory(data_editor)
 #add_subdirectory(engine)
