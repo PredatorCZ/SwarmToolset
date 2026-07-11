@@ -11,7 +11,7 @@ build_target(
   extract_slak.cpp
   LINKS
   zlib-objects
-  libswarm
+  libswarm-interface
   INCLUDES
   ${TPD_PATH}/zlib
   AUTHOR
@@ -34,7 +34,7 @@ build_target(
   create_slak.cpp
   LINKS
   zlib-objects
-  libswarm
+  libswarm-interface
   INCLUDES
   ${TPD_PATH}/zlib
   AUTHOR

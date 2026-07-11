@@ -23,6 +23,7 @@
 #include "spike/io/binwritter_stream.hpp"
 #include "spike/io/fileinfo.hpp"
 #include "spike/reflect/reflector.hpp"
+#include <algorithm>
 
 std::string_view filters[]{
     ".sbt$",

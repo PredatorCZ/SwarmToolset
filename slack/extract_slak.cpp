@@ -22,6 +22,7 @@
 #include "spike/io/binreader_stream.hpp"
 #include "spike/io/fileinfo.hpp"
 #include "zlib.h"
+#include <algorithm>
 
 std::string_view filters[]{
     ".slak$",

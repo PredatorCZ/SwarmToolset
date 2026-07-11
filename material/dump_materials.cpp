@@ -24,6 +24,7 @@
 #include "spike/io/binwritter_stream.hpp"
 #include "spike/io/fileinfo.hpp"
 #include "spike/reflect/reflector_xml.hpp"
+#include <algorithm>
 #include <set>
 
 std::string_view filters[]{

@@ -29,8 +29,8 @@ struct Buffer {
   uint32 numFaces;
   std::string indexBuffer;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct BBOX {
@@ -45,8 +45,8 @@ struct ShadowShader {
   std::string shadowTexture;
   float unk1[4];
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct Primitive {
@@ -61,8 +61,8 @@ struct Primitive {
   uint32 numBones;
   uint32 boneOffset;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct SkinBone {
@@ -70,8 +70,8 @@ struct SkinBone {
   uint32 unk;
   std::string name;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct Bone {
@@ -81,8 +81,8 @@ struct Bone {
   uint64 hash;
   std::string name;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 enum class ModelType : uint8 {
@@ -103,8 +103,8 @@ struct RenderModel {
   std::vector<SkinBone> joints;
   std::vector<Bone> bones;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct Header {
@@ -115,7 +115,7 @@ struct Header {
   std::vector<MaterialVariant> materials;
   std::vector<RenderModel> lods;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 } // namespace SBM

@@ -23,10 +23,11 @@
 #include "spike/io/stat.hpp"
 #include "spike/master_printer.hpp"
 #include "zlib.h"
+#include <algorithm>
 #include <map>
 #include <mutex>
-#include <set>
 #include <thread>
+#include <chrono>
 
 static AppInfo_s appInfo{
     .header = SLAKCreate_DESC " v" SLAKCreate_VERSION ", " SLAKCreate_COPYRIGHT

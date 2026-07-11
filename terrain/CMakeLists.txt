@@ -33,7 +33,7 @@ build_target(
   sbt_to_gltf.cpp
   LINKS
   gltf-interface
-  libswarm
+  libswarm-interface
   AUTHOR
   "Lukas Cone"
   DESCR

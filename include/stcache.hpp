@@ -16,8 +16,10 @@
 */
 
 #pragma once
+#include "settings.hpp"
 #include <cstdint>
 #include <iosfwd>
+#include <string>
 #include <string_view>
 
 namespace stcache {
@@ -41,13 +43,13 @@ struct ScriptIterator {
   }
 };
 
-ScriptIterator GlobalResourcesIterator();
-ScriptIterator GlobalInstancesIterator();
-size_t FileSize(const CacheFile &file);
-const CacheFile *GetFile(std::string_view str);
-void GetFileData(const CacheFile &file, char *outBuffer, uint32_t position,
-                 uint32_t dataToBeRead);
-void AddCachePair(Cache *c, std::istream *s);
-void PatchCache();
-std::string MakeVirtualSlak();
+ScriptIterator SW_EXTERN GlobalResourcesIterator();
+ScriptIterator SW_EXTERN GlobalInstancesIterator();
+size_t SW_EXTERN FileSize(const CacheFile &file);
+const CacheFile SW_EXTERN *GetFile(std::string_view str);
+void SW_EXTERN GetFileData(const CacheFile &file, char *outBuffer,
+                           uint32_t position, uint32_t dataToBeRead);
+void SW_EXTERN AddCachePair(Cache *c, std::istream *s);
+void SW_EXTERN PatchCache();
+std::string SW_EXTERN MakeVirtualSlak();
 } // namespace stcache

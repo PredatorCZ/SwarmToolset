@@ -95,7 +95,7 @@ inline bool IncludeExtension(CacheFileType type) {
   return false;
 }
 
-CacheFileType FromExtension(std::string_view ext);
+CacheFileType SW_EXTERN FromExtension(std::string_view ext);
 
 template <class C> struct LocalArray {
   uint32_t numItems = 0;

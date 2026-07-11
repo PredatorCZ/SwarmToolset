@@ -29,7 +29,7 @@ jobs:
         run: |
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
-          cmake -DEDITORS=OFF -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/tmp ..
+          cmake -DMODS=OFF -DEDITORS=OFF -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DCMAKE_INSTALL_PREFIX=${{github.workspace}}/tmp ..
           echo "SK_VERSION=$(cat version)" >> $GITHUB_ENV
 
       - name: Build
@@ -65,7 +65,7 @@ jobs:
           choco install ninja
           mkdir ${{github.workspace}}/build
           cd ${{github.workspace}}/build
-          cmake -G Ninja -DEDITORS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}} ..
+          cmake -G Ninja -DMODS=OFF -DEDITORS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${{github.workspace}} ..
           echo "SK_VERSION=$(Get-Content -Path ./version)" >> $env:GITHUB_ENV
         env:
           CC: clang

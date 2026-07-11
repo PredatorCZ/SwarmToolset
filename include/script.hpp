@@ -3,6 +3,7 @@
 #include <iosfwd>
 #include <string_view>
 #include <memory>
+#include "settings.hpp"
 
 enum ValueType {
   VL_SIMPLE,   // in ""
@@ -16,7 +17,7 @@ struct ScriptParser {
   std::function<void(std::string_view, ValueType)> newMember;
   std::function<void(std::string_view)> newValue;
   std::function<void()> subclassEnd;
-  void Process();
+  void SW_EXTERN Process();
 
 private:
   friend class ScriptParserImpl;
@@ -28,4 +29,4 @@ private:
 
 struct Resource;
 
-std::unique_ptr<Resource> AllocClass(std::string_view className);
+std::unique_ptr<Resource> SW_EXTERN AllocClass(std::string_view className);

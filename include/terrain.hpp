@@ -25,8 +25,8 @@ struct Group {
   std::string unkName;
   std::vector<std::string> usedMaterials;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct ShadowShader {
@@ -36,8 +36,8 @@ struct ShadowShader {
   std::string shadowTexture;
   float unk1[4];
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct DepthField {
@@ -46,8 +46,8 @@ struct DepthField {
   es::Matrix44 tm1;
   SBM::BBOX bbox;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct CollisionBBoxGroup {
@@ -77,8 +77,8 @@ struct CollisionObject {
 
   DepthField depthField;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct Zone {
@@ -89,8 +89,8 @@ struct Zone {
   SBM::RenderModel model;
   CollisionObject collision;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct Header {
@@ -102,7 +102,7 @@ struct Header {
   std::vector<Group> groups;
   std::vector<Zone> zones;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 } // namespace SBT

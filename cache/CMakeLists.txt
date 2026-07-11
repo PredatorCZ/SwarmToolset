@@ -10,8 +10,7 @@ build_target(
   VERSION
   1
   LINKS
-  stcache
-  zstd-objects
+  stcache-interface
   AUTHOR
   "Lukas Cone"
   DESCR

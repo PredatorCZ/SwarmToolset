@@ -36,3 +36,7 @@ target_include_directories(stmod PRIVATE ${CMAKE_SOURCE_DIR}/include ${TPD_PATH}
 add_executable(mod_stgame launcher.cpp)
 target_link_libraries(mod_stgame detours)
 target_compile_definitions(mod_stgame PRIVATE UNICODE _UNICODE)
+
+if(MODPATH)
+    set_target_properties(mod_stgame stmod PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${MODPATH} LIBRARY_OUTPUT_DIRECTORY ${MODPATH})
+endif()

@@ -10,7 +10,7 @@ build_target(
   SOURCES
   fixup_materials.cpp
   LINKS
-  libswarm
+  libswarm-interface
   AUTHOR
   "Lukas Cone"
   DESCR
@@ -31,7 +31,7 @@ build_target(
   dump_materials.cpp
   LINKS
   pugixml-interface
-  libswarm
+  libswarm-interface
   AUTHOR
   "Lukas Cone"
   DESCR

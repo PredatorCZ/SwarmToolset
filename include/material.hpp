@@ -16,9 +16,11 @@
 */
 
 #pragma once
+#include "settings.hpp"
 #include "spike/io/bincore_fwd.hpp"
 #include "spike/type/vectors.hpp"
 #include "spike/util/supercore.hpp"
+#include <string>
 #include <variant>
 
 struct ReflectedInstance;
@@ -30,8 +32,8 @@ struct Material {
   std::string renShaderName;
 
   void ReflectorTag();
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct BumpAnisotropic : Material {
@@ -50,8 +52,8 @@ struct BumpAnisotropic : Material {
   bool ignoreMipMaps;
   bool unk;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct Glow : Material {
@@ -64,8 +66,8 @@ struct Glow : Material {
   bool blended;
   float fogFactor;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct RenMaterial : Material {
@@ -80,14 +82,14 @@ struct RenMaterial : Material {
   uint32 srcBlend;
   uint32 destBlend;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct Unlit : RenMaterial {
   std::string albedoTexture;
   float pulseFrequency;
-  float pulseSeed; // runtime
+  float pulseSeed;   // runtime
   float pulseOffset; // runtime
   Vector2 velocity;
   Vector2 textureUVOffset; // runtime
@@ -97,8 +99,8 @@ struct Unlit : RenMaterial {
   float fogFactor;
   bool vertexAlpha;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct BumpSpecular : RenMaterial {
@@ -113,8 +115,8 @@ struct BumpSpecular : RenMaterial {
   bool ignoreMipMaps;
   bool unk;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct BumpTexBlend2 : Material {
@@ -132,8 +134,8 @@ struct BumpTexBlend2 : Material {
   bool applyNormalTo1stTextureOnly;
   bool unk3;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct Overlay : RenMaterial {
@@ -148,8 +150,8 @@ struct Overlay : RenMaterial {
   bool blended;
   bool vertexAlpha;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 struct TintDistort : Material {
@@ -161,13 +163,13 @@ struct TintDistort : Material {
   Vector2 unk;
   bool blended;
 
-  void Read(BinReaderRef rd);
-  void Write(BinWritterRef wr) const;
+  void SW_EXTERN Read(BinReaderRef rd);
+  void SW_EXTERN Write(BinWritterRef wr) const;
 };
 
 using MaterialVariant = std::variant<BumpAnisotropic, Glow, Unlit, BumpSpecular,
                                      BumpTexBlend2, Overlay, TintDistort>;
 
-void ReadMaterialVariant(BinReaderRef rd, MaterialVariant &mtr);
+void SW_EXTERN ReadMaterialVariant(BinReaderRef rd, MaterialVariant &mtr);
 
-ReflectedInstance GetReflectedMaterial(MaterialVariant &mtr);
+ReflectedInstance SW_EXTERN GetReflectedMaterial(MaterialVariant &mtr);
