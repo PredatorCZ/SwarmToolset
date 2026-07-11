@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.3)
-
 project(VirtualSlak)
 
 build_target(
@@ -13,6 +11,7 @@ build_target(
   spike-objects
   pugixml-objects
   stcache
+  zstd-objects
   AUTHOR
   "Lukas Cone"
   DESCR
@@ -33,6 +32,7 @@ build_target(
   1
   LINKS
   stcache
+  zstd-objects
   AUTHOR
   "Lukas Cone"
   DESCR
@@ -53,6 +53,7 @@ build_target(
   spike-objects
   pugixml-objects
   stcache
+  zstd-objects
   AUTHOR
   "Lukas Cone"
   DESCR

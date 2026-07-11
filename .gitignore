@@ -4,3 +4,4 @@ bin/
 lib/
 tmp/
 .cache/
+imgui.ini

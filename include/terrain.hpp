@@ -17,6 +17,7 @@
 
 #pragma once
 #include "model.hpp"
+#include "spike/type/flags.hpp"
 
 namespace SBT {
 struct Group {
@@ -54,17 +55,25 @@ struct CollisionBBoxGroup {
   uint32 unk4[2];
 };
 
+enum class ModelFlag {
+  Quantized,
+  NoLeaf,
+  SingleNode,
+};
+
 struct CollisionObject {
   std::vector<uint32> ids0;
-  std::vector<uint32> ids1;
-  uint32 unk3;
+  std::vector<uint32> leafTriangles;
+  es::Flags<ModelFlag> modelCode;
 
-  std::vector<CollisionBBoxGroup> bboxGroups;
+  std::vector<CollisionBBoxGroup> tree;
   std::vector<Vector> positions;
   std::vector<IVector> tris;
   std::vector<uint32> trisTypes;
 
-  float unk6[10];
+  SBM::BBOX bounds;
+  Vector boundingSphereOffset;
+  float boundingSphereRadius;
 
   DepthField depthField;
 

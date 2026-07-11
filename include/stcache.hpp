@@ -16,28 +16,29 @@
 */
 
 #pragma once
-#include <string_view>
+#include <cstdint>
 #include <iosfwd>
+#include <string_view>
 
 namespace stcache {
 struct Cache;
 struct CacheFile;
 
 struct ScriptIterator {
-    uint16_t remSize;
-    std::string_view current;
+  uint16_t remSize;
+  std::string_view current;
 
-    std::string_view Next() {
-        if (remSize == 0) {
-            return {};
-        }
-
-        const size_t found = current.find_first_of('\0');
-        std::string_view retVal(current.substr(0, found));
-        current.remove_prefix(found + 1);
-        remSize--;
-        return retVal;
+  std::string_view Next() {
+    if (remSize == 0) {
+      return {};
     }
+
+    const size_t found = current.find_first_of('\0');
+    std::string_view retVal(current.substr(0, found));
+    current.remove_prefix(found + 1);
+    remSize--;
+    return retVal;
+  }
 };
 
 ScriptIterator GlobalResourcesIterator();

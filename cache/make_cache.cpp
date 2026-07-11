@@ -23,6 +23,7 @@
 #include "spike/io/binwritter.hpp"
 #include "spike/io/stat.hpp"
 #include "stcache_internal.hpp"
+#include <algorithm>
 #include <map>
 #include <mutex>
 #include <set>

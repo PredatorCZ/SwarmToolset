@@ -1,5 +1,3 @@
-cmake_minimum_required(VERSION 3.3)
-
 project(StgameCache)
 
 build_target(
@@ -13,6 +11,7 @@ build_target(
   1
   LINKS
   stcache
+  zstd-objects
   AUTHOR
   "Lukas Cone"
   DESCR

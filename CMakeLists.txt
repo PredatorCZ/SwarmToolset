@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -23,16 +23,25 @@ target_link_libraries(libswarm spike-interface)
 target_include_directories(libswarm PUBLIC include)
 set_target_properties(libswarm PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
+set(CMAKE_BUILD_TYPE_BAK ${CMAKE_BUILD_TYPE})
+set(CMAKE_BUILD_TYPE Release)
+
 file(GLOB ZLIB_SOURCES "${TPD_PATH}/zlib/*.c")
 add_library(zlib-objects OBJECT ${ZLIB_SOURCES})
 set_target_properties(zlib-objects PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 enable_language(ASM)
 file(GLOB_RECURSE ZSTD_SOURCE_FILES "${TPD_PATH}/zstd/lib/*.c")
+add_library(zstd-objects OBJECT ${ZSTD_SOURCE_FILES} ${TPD_PATH}/zstd/lib/decompress/huf_decompress_amd64.S)
+target_include_directories(zstd-objects PRIVATE ${TPD_PATH}/zstd/lib/common PUBLIC ${TPD_PATH}/zstd/lib)
+set_target_properties(zstd-objects PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
-add_library(stcache OBJECT src/stcache.cpp ${ZSTD_SOURCE_FILES} ${TPD_PATH}/zstd/lib/decompress/huf_decompress_amd64.S)
-target_link_libraries(stcache spike-interface)
-target_include_directories(stcache PUBLIC include ${TPD_PATH}/zstd/lib/common ${TPD_PATH}/zstd/lib)
+set(CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE_BAK})
+
+add_library(stcache OBJECT src/stcache.cpp)
+target_link_libraries(stcache PUBLIC spike-interface)
+target_link_libraries(stcache LINK_PUBLIC zstd-objects)
+target_include_directories(stcache PUBLIC include)
 set_target_properties(stcache PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 add_subdirectory(${TPD_PATH}/veverka)
@@ -56,3 +65,4 @@ endif()
 
 #add_subdirectory(launcher)
 add_subdirectory(data_editor)
+#add_subdirectory(engine)

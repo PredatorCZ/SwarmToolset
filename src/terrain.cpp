@@ -95,6 +95,7 @@ void SBT::DepthField::Read(BinReaderRef rd) {
 constexpr uint32 BYOH = CompileFourCC("BYHO");
 
 void SBT::CollisionObject::Read(BinReaderRef rd) {
+  // OPC_HybridModel
   uint32 id;
   rd.Read(id);
 
@@ -103,17 +104,20 @@ void SBT::CollisionObject::Read(BinReaderRef rd) {
   }
 
   rd.ReadContainer(ids0);
-  uint32 numIds1;
-  rd.Read(numIds1);
+  uint32 numLeaves;
+  rd.Read(numLeaves);
 
-  if (numIds1 > 1) {
-    rd.ReadContainer(ids1, numIds1);
+  if (numLeaves > 1) {
+    rd.ReadContainer(leafTriangles, numLeaves);
   }
 
-  rd.Read(unk3);
-  if ((unk3 & 4) == 0) {
-    rd.ReadContainer(bboxGroups);
+  // OPC_BaseModel
+  rd.Read(modelCode);
+  if (modelCode != ModelFlag::SingleNode) {
+    rd.ReadContainer(tree);
   }
+
+  // SLColCell
   uint32 numPositions;
   uint32 numTris;
   rd.Read(numPositions);
@@ -121,7 +125,9 @@ void SBT::CollisionObject::Read(BinReaderRef rd) {
   rd.ReadContainer(positions, numPositions);
   rd.ReadContainer(tris, numTris);
   rd.ReadContainer(trisTypes, numTris);
-  rd.Read(unk6);
+  rd.Read(bounds);
+  rd.Read(boundingSphereOffset);
+  rd.Read(boundingSphereRadius);
   bool useDepthField;
   rd.Read(useDepthField);
 
